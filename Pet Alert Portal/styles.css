@@ -1,0 +1,26 @@
+body {
+    padding-top: 50px;
+}
+
+.container {
+    max-width: 600px;
+}
+
+.loading-spinner {
+    display: none;
+    margin-top: 15px;
+}
+
+#map {
+    height: 300px;
+    margin-bottom: 15px;
+}
+
+.btn-primary-custom {
+    background-color: #2c7be5;
+    color: white;
+}
+
+.btn-primary-custom:hover {
+    background-color: #1a5bb8;
+}
