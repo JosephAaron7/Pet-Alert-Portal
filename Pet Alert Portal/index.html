@@ -4,102 +4,120 @@
     <meta name="description" content="Quick animal rescue report submission"/>
     <title>Pet Alert Portal Report</title>
     <!-- Minimal CSS -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" as="style">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol@0.79.0/dist/L.Control.Locate.min.css"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Update CSS Variables for a more sophisticated palette */
+        /* Update color palette for better contrast and accessibility */
         :root {
-            --primary-color: #2c5282;
-            --secondary-color: #4299e1;
-            --accent-color: #ed64a6;
-            --background-color: #f7fafc;
-            --text-color: #2d3748;
-            --border-color: rgba(44, 82, 130, 0.2);
-            --success-color: #48bb78;
-            --error-color: #f56565;
+            --primary-color: #2563eb;
+            --secondary-color: #0284c7;
+            --accent-color: #f43f5e;
+            --background-color: #f8fafc;
+            --text-color: #1e293b;
+            --border-color: rgba(37, 99, 235, 0.2);
+            --success-color: #10b981;
+            --error-color: #ef4444;
+            --spacing-xs: 0.25rem;
+            --spacing-sm: 0.5rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
         }
-        /* Enhanced container styling */
+        /* Improve container styling */
         .container {
-            backdrop-filter: blur(20px);
-            background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(247, 250, 252, 0.95));
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            padding: 40px;
-            border-radius: 30px;
-            box-shadow: 
-                0 20px 60px rgba(0, 0, 0, 0.1),
-                0 0 0 1px rgba(255, 255, 255, 0.5) inset;
             max-width: 1000px;
-            min-height: 100vh;
-            margin: 2rem auto;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            margin: 0 auto;
+            padding: var(--spacing-xl);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.95));
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.1),
+                0 0 0 1px rgba(255, 255, 255, 0.9) inset;
         }
-        /* Improved form elements */
+        /* Enhance typography */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            letter-spacing: -0.011em;
+            line-height: 1.6;
+        }
+        h2 { 
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1.5rem;
+        }
+        /* Enhanced form elements */
         .form-control, .form-select {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 16px 20px;
             border-radius: 12px;
-            padding: 12px 16px;
-            border: 2px solid var(--border-color);
-            background: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
         }
+
         .form-control:focus, .form-select:focus {
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.3);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+            transform: translateY(-1px);
         }
-        /* Enhanced tab styling */
-        .nav-tabs {
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 15px;
-            padding: 8px;
-            gap: 8px;
-            border: none;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        }
-        .nav-tabs .nav-link {
-            border-radius: 10px;
-            padding: 12px 20px;
-            font-weight: 600;
-            color: var(--text-color);
-            transition: all 0.3s ease;
-        }
-        .nav-tabs .nav-link.active {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            border: none;
-        }
+
         /* Improved button styling */
         .btn-custom {
-            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            background: linear-gradient(145deg, var(--primary-color), var(--secondary-color));
+            padding: 20px 36px;
+            border-radius: 14px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.4);
+        }
+        .btn-custom:active {
+            transform: scale(0.98);
+        }
+        
+        /* Emergency Banner */
+        .emergency-banner {
+            max-width: 1000px;
+            margin: 0 auto 2rem auto;
+            background-color: #ef4444;
             color: white;
-            padding: 16px 32px;
-            font-weight: 600;
+            padding: 1.5rem;
+            text-align: center;
             border-radius: 12px;
-            border: none;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            box-shadow: 0 4px 15px rgba(66, 153, 225, 0.3);
-            transition: all 0.3s ease;
         }
-        .btn-custom:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(66, 153, 225, 0.4);
+        .emergency-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
         }
-        /* Enhanced social buttons */
-        .social-buttons {
-            margin-top: 40px;
-            padding: 30px;
-            border-top: 2px solid var(--border-color);
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 20px;
-        }
-        .social-btn {
-            padding: 14px 28px;
-            margin: 8px;
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid var(--border-color);
             border-radius: 12px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
+            padding: 1.5rem;
+            margin: 1rem;
+            text-align: center;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .impact-dashboard {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 1rem;
         }
         /* Progress bar enhancement */
         .progress {
@@ -111,25 +129,77 @@
             background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
             transition: width 0.4s ease;
         }
-        /* Step indicators enhancement */
-        .step-indicators {
-            margin: 15px 0;
+        /* Loading animation */
+        .loading-animation {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            backdrop-filter: blur(8px);
+            background: rgba(255, 255, 255, 0.8);
         }
-        .step {
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
+        .pulse {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--secondary-color);
+            animation: pulse 1.5s ease-in-out infinite;
         }
-        .step.active {
-            background: var(--accent-color);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+        /* Center and standardize tab navigation */
+        .nav-tabs {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            margin-bottom: 2rem;
+        }
+        .nav-item {
+            flex: 1;
+            text-align: center;
+            max-width: 200px;
+        }
+        /* Center and standardize form sections */
+        .tab-pane {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .mb-3 {
+            width: 100%;
+            max-width: 800px;
+            margin: var(--spacing-lg) auto;
+        }
+        /* Center map and standardize its container */
+        #map {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto 2rem auto;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            height: 400px;
+        }
+        /* Center and standardize social buttons */
+        .social-buttons {
+            text-align: center;
+            max-width: 800px;
+            margin: 2rem auto;
+        }
+        .social-buttons .d-flex {
+            gap: 1rem;
+            justify-content: center;
+        }
+        .social-btn {
+            min-width: 200px;
         }
     </style>
     <!-- EmailJS Script -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.4.0/purify.min.js"></script>
     <script type="text/javascript">
         (function() {
             if (typeof emailjs !== 'undefined') {
@@ -139,26 +209,36 @@
             }
         })();
     </script>
-    <!-- Leaflet JS for OpenStreetMap -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol@0.79.0/dist/L.Control.Locate.min.js" charset="utf-8"></script>
 </head>
 <body>
-    <div id="successMessage" class="alert alert-success d-none" role="alert">
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <div id="successMessage" role="alert" aria-live="polite" class="alert alert-success d-none" role="alert">
         <strong>Success!</strong> Your report has been submitted successfully.
     </div>
     <div id="errorMessage" class="alert alert-danger d-none" role="alert">
         <strong>Error!</strong> There was a problem submitting your report. Please try again.
     </div>
-    <div class="container">
-        <h2 class="mb-4 text-center" style="color: var(--primary-color);">Pet Alert Portal Report</h2>
+    <div class="emergency-banner" id="emergencyBanner">
+        <div class="emergency-content">
+            <h3>Emergency Animal Response</h3>
+            <p>24/7 Emergency Hotline: <a href="tel:1-800-XXX-XXXX">1-800-XXX-XXXX</a></p>
+            <button class="btn btn-danger">Report Emergency Now</button>
+        </div>
+    </div>
+    <div class="container" id="main-content">
+        <div class="hero-section">
+            <h2 class="mb-4">Pet Alert Portal Report</h2>
+            <p>Join us in rescuing pets in need. Your efforts can make a difference!</p>
+        </div>
         <div class="loading-animation d-none" id="loadingAnimation">
             <div class="pulse"></div>
         </div>
         <form id="reportForm" class="needs-validation" novalidate>
             <div class="progress-container mb-4">
                 <div class="progress">
-                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                    <div class="progress-bar progress-indicator" role="progressbar" style="width: 0%"></div>
                 </div>
                 <div class="step-indicators d-flex justify-content-between">
                     <span class="step active">User Info</span>
@@ -201,17 +281,17 @@
                     </button>
                 </li>
             </ul>
-            <div class="tab-content" id="myTabContent">
+            <div class="tab-content form-section" id="myTabContent">
                 <!-- User Information Section -->
                 <div class="tab-pane fade show active" id="user" role="tabpanel" aria-labelledby="user-tab">
                     <div class="mb-3">
                         <label for="reporterName" class="form-label">Your Name</label>
-                        <input type="text" id="reporterName" class="form-control" required placeholder="Enter your name"/>
+                        <input type="text" id="reporterName" class="form-control" required placeholder="Enter your name" oninput="validateField(this)"/>
                         <div class="invalid-feedback">Please enter your name.</div>
                     </div>
                     <div class="mb-3">
                         <label for="reporterContact" class="form-label">Contact Information</label>
-                        <input type="text" id="reporterContact" class="form-control" required placeholder="Enter phone number or email"/>
+                        <input type="text" id="reporterContact" class="form-control" required placeholder="Enter phone number or email" oninput="validateField(this)"/>
                         <div class="invalid-feedback">Please enter valid contact information.</div>
                     </div>
                     <div class="mb-3">
@@ -223,7 +303,7 @@
                 <div class="tab-pane fade" id="animal" role="tabpanel" aria-labelledby="animal-tab">
                     <div class="mb-3">
                         <label for="animalType" class="form-label">Animal Type</label>
-                        <select id="animalType" class="form-select" required>
+                        <select id="animalType" class="form-select" required oninput="validateField(this)">
                             <option value="">Select animal type</option>
                             <option value="dog">Dog</option>
                             <option value="cat">Cat</option>
@@ -239,12 +319,12 @@
                     </div>
                     <div class="mb-3">
                         <label for="colorMarkings" class="form-label">Color and Markings</label>
-                        <input type="text" id="colorMarkings" class="form-control" required placeholder="Describe animal colors and unique markings"/>
+                        <input type="text" id="colorMarkings" class="form-control" required placeholder="Describe animal colors and unique markings" oninput="validateField(this)"/>
                         <div class="invalid-feedback">Please describe the animal's color and markings.</div>
                     </div>
                     <div class="mb-3">
                         <label for="size" class="form-label">Size</label>
-                        <select id="size" class="form-select" required>
+                        <select id="size" class="form-select" required oninput="validateField(this)">
                             <option value="">Select size</option>
                             <option value="small">Small</option>
                             <option value="medium">Medium</option>
@@ -258,7 +338,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="gender" class="form-label">Gender</label>
-                        <select id="gender" class="form-select" required>
+                        <select id="gender" class="form-select" required oninput="validateField(this)">
                             <option value="">Select gender</option>
                             <option value="male">Male</option>
                             <option value="female">Female</option>
@@ -272,7 +352,7 @@
                     <div id="map"></div>
                     <div class="mb-3">
                         <label for="reportType" class="form-label">Type of Report</label>
-                        <select id="reportType" class="form-select" required>
+                        <select id="reportType" class="form-select" required oninput="validateField(this)">
                             <option value="">Select report type</option>
                             <option value="lost-pet">Lost Pet</option>
                             <option value="found-pet">Found Pet</option>
@@ -284,7 +364,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="lastSeen" class="form-label">Date and Time</label>
-                        <input type="datetime-local" id="lastSeen" class="form-control" required/>
+                        <input type="datetime-local" id="lastSeen" class="form-control" required oninput="validateField(this)"/>
                         <div class="invalid-feedback">Please provide the date and time.</div>
                     </div>
                     <div class="mb-3">
@@ -296,7 +376,7 @@
                 <div class="tab-pane fade" id="behavior" role="tabpanel" aria-labelledby="behavior-tab">
                     <div class="mb-3">
                         <label for="temperament" class="form-label">Temperament</label>
-                        <select id="temperament" class="form-select" required>
+                        <select id="temperament" class="form-select" required oninput="validateField(this)">
                             <option value="">Select temperament</option>
                             <option value="friendly">Friendly</option>
                             <option value="shy">Shy</option>
@@ -307,7 +387,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="approachability" class="form-label">Approachability</label>
-                        <select id="approachability" class="form-select" required>
+                        <select id="approachability" class="form-select" required oninput="validateField(this)">
                             <option value="">Select approachability</option>
                             <option value="yes">Yes</option>
                             <option value="no">No</option>
@@ -317,7 +397,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="condition" class="form-label">Condition</label>
-                        <select id="condition" class="form-select" required>
+                        <select id="condition" class="form-select" required oninput="validateField(this)">
                             <option value="">Select condition</option>
                             <option value="healthy">Healthy</option>
                             <option value="injured">Injured</option>
@@ -357,7 +437,7 @@
                         <input type="text" id="tattooId" class="form-control" placeholder="Enter any tattoo or other IDs"/>
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary w-100 btn-custom" id="submitReportButton" style="margin-top: 20px;">Submit Report Now</button>
+                <button aria-label="Submit report" type="submit" class="btn btn-primary w-100 btn-custom" id="submitReportButton" style="margin-top: 20px;" onclick="showLoadingState(this)">Submit Report Now</button>
             </div>
         </form>
         <div class="social-buttons">
@@ -384,9 +464,135 @@
             </div>
         </div>
     </div>
+    <div class="impact-dashboard">
+        <div class="stat-card">
+            <h4>Animals Saved</h4>
+            <div class="stat-number" id="savedCount">0</div>
+            <div class="trend positive">↑ 15% this week</div>
+        </div>
+        <div class="stat-card">
+            <h4>Active Reports</h4>
+            <div class="stat-number" id="activeCount">0</div>
+            <div class="trend neutral">← Stable</div>
+        </div>
+        <div class="stat-card">
+            <h4>Response Time</h4>
+            <div class="stat-number" id="responseTime">0min</div>
+            <div class="trend positive">↑ Improving</div>
+        </div>
+    </div>
+    <div class="emergency-services">
+        <h4>Emergency Contacts</h4>
+        <a href="tel:555-0123" class="emergency-contact"><i class="fas fa-phone-alt"></i> Animal Control</a>
+        <a href="tel:555-0124" class="emergency-contact"><i class="fas fa-phone-alt"></i> Emergency Vet</a>
+        <a href="tel:555-0125" class="emergency-contact"><i class="fas fa-phone-alt"></i> Wildlife Rescue</a>
+    </div>
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+    const debounce = (func, wait) => {
+        let timeout;
+        return function executedFunction(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    };
+
+    function sanitizeInput(input) {
+        return DOMPurify.sanitize(input);
+    }
+
+    function showLoadingState(element) {
+        element.classList.add('loading');
+        element.innerHTML = `<div class="spinner-border spinner-border-sm" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div> ${element.innerHTML}`;
+    }
+
+    function validateField(field) {
+        const value = field.value.trim();
+        const isValid = field.checkValidity();
+        field.classList.toggle('is-valid', isValid);
+        field.classList.toggle('is-invalid', !isValid);
+        return isValid;
+    }
+
+    function enhancedValidation(field) {
+        const value = field.value.trim();
+        const type = field.getAttribute('type');
+        
+        if (type === 'tel') {
+            return /^[\d\s\-\+\(\)]{10,}$/.test(value);
+        }
+        if (type === 'email') {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+        }
+        return value.length > 0;
+    }
+
+    function enhancedValidation() {
+        const fields = document.querySelectorAll('.form-control, .form-select');
+        fields.forEach(field => {
+            field.addEventListener('input', debounce(async (e) => {
+                const isValid = await validateField(field);
+                updateFieldStatus(field, isValid);
+                updateFormProgress();
+            }, 300));
+        });
+    }
+
+    function cacheFormData() {
+        const formData = new FormData(document.getElementById('reportForm'));
+        localStorage.setItem('reportFormCache', JSON.stringify(Object.fromEntries(formData)));
+    }
+
+    function getCurrentLocation() {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                const {latitude, longitude} = position.coords;
+                updateMap(latitude, longitude);
+            });
+        }
+    }
+
+    function enableLocationTracking() {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.watchPosition(
+                position => {
+                    updateMapLocation(position.coords);
+                    updateNearbyServices(position.coords);
+                },
+                error => console.error(error),
+                { enableHighAccuracy: true }
+            );
+        }
+    }
+
+    window.addEventListener('load', () => {
+        const cached = localStorage.getItem('reportFormCache');
+        if (cached) {
+            const restore = confirm('Would you like to restore your previous form data?');
+            if (restore) {
+                const data = JSON.parse(cached);
+                Object.entries(data).forEach(([key, value]) => {
+                    const field = document.getElementById(key);
+                    if (field) field.value = value;
+                });
+            }
+        }
+
+        enhancedValidation();
+        enableLocationTracking();
+    });
+
+    setInterval(cacheFormData, 30000);
+
+    function updateProgress() {
+        const fields = document.querySelectorAll('[required]');
+        const filledFields = Array.from(fields).filter(field => field.value.length > 0);
+        return (filledFields.length / fields.length) * 100;
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
             initForm();
 
@@ -405,7 +611,7 @@
                         steps.forEach((step, i) => {
                             step.classList.toggle('active', i === index);
                         });
-                        const progressBar = document.querySelector('.progress-bar');
+                        const progressBar = document.querySelector('.progress-indicator');
                         const progress = ((index + 1) / tabButtons.length) * 100;
                         progressBar.style.width = `${progress}%`;
                         const targetTab = document.querySelector(this.getAttribute('data-bs-target'));
@@ -421,11 +627,8 @@
                 let isValid = true;
 
                 requiredFields.forEach(field => {
-                    if (!field.value) {
-                        field.classList.add('is-invalid');
+                    if (!validateField(field)) {
                         isValid = false;
-                    } else {
-                        field.classList.remove('is-invalid');
                     }
                 });
 
@@ -457,29 +660,82 @@
                     successMessage.classList.remove('d-none');
                     this.reset();
                 } catch (error) {
-                    console.error('Submission error:', error);
-                    errorMessage.classList.remove('d-none');
+                    handleError(error);
                 } finally {
                     loadingAnimation.classList.add('d-none');
                 }
             });
 
+            function handleError(error) {
+                const errorMessage = document.getElementById('errorMessage');
+                errorMessage.innerHTML = `
+                    <div class="error-content">
+                        <h4>Error Occurred</h4>
+                        <p>${error.message}</p>
+                        <button onclick="retrySubmission()">Retry</button>
+                    </div>
+                `;
+                errorMessage.classList.remove('d-none');
+            }
+
             function initMap() {
                 const mapElement = document.getElementById('map');
                 if (!mapElement) return;
 
-                try {
-                    const map = L.map('map').setView([51.505, -0.09], 13);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-                    const geocoder = L.Control.geocoder().addTo(map);
-                    
-                    map.on('click', function(e) {
-                        L.marker(e.latlng).addTo(map);
-                    });
-                } catch (error) {
-                    console.error('Map initialization failed:', error);
-                    mapElement.innerHTML = 'Map loading failed. Please refresh the page.';
-                }
+                mapElement.style.height = '400px';
+                mapElement.style.marginBottom = '20px';
+                mapElement.style.borderRadius = '12px';
+                mapElement.style.border = '1px solid var(--border-color)';
+
+                const map = L.map('map', {
+                    zoomControl: true,
+                    doubleClickZoom: true,
+                    scrollWheelZoom: true
+                }).setView([51.505, -0.09], 13);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                
+                const locateControl = L.control.locate({
+                    position: 'topleft',
+                    drawCircle: true,
+                    follow: true,
+                    setView: true,
+                    keepCurrentZoomLevel: true,
+                    markerStyle: {
+                        weight: 1,
+                        opacity: 0.8,
+                        fillOpacity: 0.8
+                    },
+                    circleStyle: {
+                        weight: 1,
+                        clickable: false
+                    },
+                    icon: 'fa fa-location-arrow',
+                    metric: true,
+                    strings: {
+                        title: "Show me where I am",
+                        popup: "You are within {distance} {unit} from this point",
+                        outsideMapBoundsMsg: "You seem to be outside the map bounds"
+                    },
+                    locateOptions: {
+                        maxZoom: 18,
+                        watch: true,
+                        enableHighAccuracy: true
+                    }
+                }).addTo(map);
+
+                setTimeout(() => {
+                    locateControl.start();
+                }, 1000);
+            }
+
+            function addMapMarker(lat, lng, type) {
+                const icon = L.divIcon({
+                    className: `marker-icon ${type}`,
+                    html: `<div class="marker-pulse"></div>`,
+                    iconSize: [30, 30]
+                });
+                return L.marker([lat, lng], {icon}).addTo(map);
             }
 
             function initImageUpload() {
@@ -501,6 +757,9 @@
                             photoUpload.value = '';
                             return;
                         }
+                        optimizeImageUpload(file).then(blob => {
+                            // Handle the optimized image blob as needed
+                        });
                     });
                 });
             }
