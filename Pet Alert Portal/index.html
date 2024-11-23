@@ -1,610 +1,182 @@
-<html><head><base href="/">
+<html><head><base href="/?">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-<script type="text/javascript">
-async function testEmailService() {
-    try {
-        await initializeEmailJS();
-        return true;
-    } catch (error) {
-        console.error('Email service test failed:', error);
-        return false;
-    }
-}
-
-async function initializeEmailJS() {
-    return new Promise((resolve, reject) => {
-        try {
-            const maxWaitTime = 5000;
-            const checkInterval = 100;
-
-            const timeoutId = setTimeout(() => {
-                reject(new Error('EmailJS initialization timed out'));
-            }, maxWaitTime);
-
-            const checkEmailJS = () => {
-                if (typeof emailjs !== 'undefined') {
-                    clearTimeout(timeoutId);
-                    emailjs.init("jvRz2wFY1kqzz5Cmy");
-                    console.log('EmailJS initialized successfully');
-                    resolve(true);
-                } else {
-                    setTimeout(checkEmailJS, checkInterval);
-                }
-            };
-
-            checkEmailJS();
-        } catch (error) {
-            reject(error);
-        }
-    });
-}
-
-async function sendEmailNotification(formData) {
-    try {
-        await initializeEmailJS();
-
-        const templateParams = {
-            to_email: 'premierassetconsulting@gmail.com',
-            reporter_name: formData.reporterName,
-            reporter_contact: formData.reporterContact,
-            animal_type: formData.animalType,
-            health_status: formData.healthStatus,
-            behavior: formData.behavior,
-            location_details: formData.locationDetails,
-            description: formData.description || 'No additional description provided',
-            urgency: formData.urgency,
-            image_url: formData.imageUrl || 'No Image Provided',
-            submission_time: new Date().toLocaleString()
-        };
-
-        const response = await emailjs.send(
-            'service_yu7vixc',
-            'template_hl5u3da',
-            templateParams,
-            'jvRz2wFY1kqzz5Cmy'
-        );
-
-        console.log('Email notification sent successfully:', response);
-        return true;
-    } catch (error) {
-        console.error('Failed to send email notification:', error);
-        throw new Error(`Failed to send email notification: ${error.message}`);
-    }
-}
-
-async function submitReport(formData, type) {
-    try {
-        let templateParams = {};
-        
-        switch(type) {
-            case 'animal':
-                templateParams = {
-                    to_email: 'premierassetconsulting@gmail.com',
-                    subject: 'New Animal Report',
-                    reporter_name: formData.reporterName,
-                    reporter_contact: formData.reporterContact,
-                    animal_type: formData.animalType,
-                    health_status: formData.healthStatus,
-                    behavior: formData.behavior,
-                    location_details: formData.locationDetails,
-                    description: formData.description || 'No additional description provided',
-                    urgency: formData.urgency,
-                    image_url: formData.imageUrl || 'No Image Provided',
-                    submission_time: new Date().toLocaleString()
-                };
-                break;
-                
-            case 'volunteer':
-                templateParams = {
-                    to_email: 'premierassetconsulting@gmail.com',
-                    subject: 'New Volunteer Application',
-                    volunteer_name: formData.name,
-                    volunteer_email: formData.email,
-                    volunteer_phone: formData.phone,
-                    availability: formData.availability,
-                    skills: formData.skills,
-                    has_transportation: formData.transportation ? 'Yes' : 'No',
-                    experience_level: formData.experienceLevel,
-                    preferred_animals: formData.preferredAnimals,
-                    submission_time: new Date().toLocaleString()
-                };
-                break;
-                
-            case 'subscription':
-                templateParams = {
-                    to_email: 'premierassetconsulting@gmail.com',
-                    subject: 'New Alert Subscription',
-                    subscriber_email: formData.email,
-                    subscriber_phone: formData.phone,
-                    email_alerts: formData.emailAlerts ? 'Yes' : 'No',
-                    sms_alerts: formData.smsAlerts ? 'Yes' : 'No',
-                    submission_time: new Date().toLocaleString()
-                };
-                break;
-        }
-
-        const response = await emailjs.send(
-            'service_yu7vixc',
-            'template_hl5u3da',
-            templateParams,
-            'jvRz2wFY1kqzz5Cmy'
-        );
-
-        console.log(`${type} submission sent successfully:`, response);
-        return true;
-    } catch (error) {
-        console.error(`Failed to submit ${type}:`, error);
-        throw error;
-    }
-}
-
-let dbInitialized = false;
-
-async function testDatabaseConnection() {
-    try {
-        const createTablesQueries = [
-            `CREATE TABLE IF NOT EXISTS animal_reports (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                reporter_name TEXT NOT NULL,
-                contact TEXT NOT NULL,
-                animal_type TEXT NOT NULL,
-                health_status TEXT NOT NULL,
-                behavior TEXT NOT NULL,
-                location TEXT NOT NULL,
-                description TEXT,
-                status TEXT DEFAULT 'New',
-                image_url TEXT,
-                urgency TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )`,
-            
-            `CREATE TABLE IF NOT EXISTS alert_subscriptions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                email TEXT,
-                phone TEXT,
-                receive_email BOOLEAN DEFAULT 0,
-                receive_sms BOOLEAN DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                unsubscribed_at TIMESTAMP NULL,
-                subscription_token TEXT UNIQUE
-            )`,
-            
-            `CREATE TABLE IF NOT EXISTS volunteers (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                email TEXT NOT NULL,
-                phone TEXT,
-                availability TEXT NOT NULL,
-                skills TEXT,
-                transportation BOOLEAN,
-                experience_level TEXT NOT NULL,
-                preferred_animals TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )`
-        ];
-
-        // Execute each table creation query
-        for (const query of createTablesQueries) {
-            const response = await fetch('/api/v1/sql/?' + new URLSearchParams({sql: query}));
-            if (!response.ok) {
-                throw new Error(`Failed to create table: ${response.status} ${response.statusText}`);
-            }
-            await response.json();
-        }
-
-        // Test query to verify connection
-        const testQuery = "SELECT 1";
-        const testResponse = await fetch('/api/v1/sql/?' + new URLSearchParams({sql: testQuery}));
-        
-        if (!testResponse.ok) {
-            throw new Error(`Database test failed: ${testResponse.status} ${testResponse.statusText}`);
-        }
-        
-        console.log('Database connection and tables verified successfully');
-        dbInitialized = true;
-        return true;
-    } catch (error) {
-        console.error('Database connection test failed:', error);
-        dbInitialized = false;
-        return false;
-    }
-}
-
-async function monitorDatabaseHealth() {
-    const statusElement = document.getElementById('databaseStatus');
-    if (!statusElement) return;
-    
-    try {
-        const status = await testDatabaseConnection();
-        statusElement.textContent = `Database: ${status ? 'Connected' : 'Connection Failed'}`;
-        statusElement.style.color = status ? 'green' : 'red';
-        dbInitialized = status;
-        
-        if (!status) {
-            console.warn('Database connection lost, retrying in 5 seconds...');
-            setTimeout(monitorDatabaseHealth, 5000);
-        } else {
-            // If connected, check again in 30 seconds
-            setTimeout(monitorDatabaseHealth, 30000);
-        }
-    } catch (error) {
-        console.error('Database health check failed:', error);
-        statusElement.textContent = 'Database: Connection Failed';
-        statusElement.style.color = 'red';
-        setTimeout(monitorDatabaseHealth, 5000);
-    }
-}
-
-async function handleSubscription(formData) {
-    try {
-        if (!dbInitialized) {
-            await testDatabaseConnection();
-        }
-        
-        const subscriptionToken = generateUUID();
-        
-        // Sanitize inputs
-        const sanitizedEmail = formData.email?.replace(/'/g, "''") || null;
-        const sanitizedPhone = formData.phone?.replace(/'/g, "''") || null;
-        
-        // Validate required fields
-        if (formData.emailAlerts && !sanitizedEmail) {
-            throw new Error('Email is required for email alerts');
-        }
-        if (formData.smsAlerts && !sanitizedPhone) {
-            throw new Error('Phone number is required for SMS alerts');
-        }
-        
-        const query = `
-            INSERT INTO alert_subscriptions 
-            (email, phone, receive_email, receive_sms, subscription_token)
-            VALUES 
-            (${sanitizedEmail ? `'${sanitizedEmail}'` : 'NULL'}, 
-             ${sanitizedPhone ? `'${sanitizedPhone}'` : 'NULL'}, 
-             ${formData.emailAlerts ? 1 : 0}, 
-             ${formData.smsAlerts ? 1 : 0},
-             '${subscriptionToken}')
-        `;
-        
-        const response = await fetch('/api/v1/sql/?' + new URLSearchParams({sql: query}));
-        if (!response.ok) {
-            throw new Error(`Database error: ${response.status} ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        console.log('Subscription saved successfully:', result);
-        
-        if (formData.emailAlerts) {
-            await sendSubscriptionConfirmation(formData, subscriptionToken);
-        }
-        
-        showSuccessMessage('Successfully subscribed to alerts!', 'subscriptionForm');
-        document.getElementById('subscriptionForm').reset();
-        return true;
-        
-    } catch (error) {
-        console.error('Error in handleSubscription:', error);
-        showErrorMessage(error.message || 'Failed to save subscription. Please try again.', 'subscriptionErrorMessages');
-        throw error;
-    }
-}
-
-async function sendSubscriptionConfirmation(formData, token) {
-    const templateParams = {
-        to_email: formData.email,
-        subscription_token: token,
-        unsubscribe_url: `${window.location.origin}/unsubscribe?token=${token}`
-    };
-    
-    try {
-        await emailjs.send(
-            'service_yu7vixc',
-            'template_hl5u3da',
-            templateParams,
-            'jvRz2wFY1kqzz5Cmy'
-        );
-    } catch (error) {
-        console.error('Error sending subscription confirmation:', error);
-        throw error;
-    }
-}
-
-function generateUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });
-}
-
-async function testAndInitializeDatabase() {
-    try {
-        const result = await testDatabaseConnection();
-        if (!result) {
-            throw new Error('Database initialization failed');
-        }
-        console.log('Database initialized successfully');
-        dbInitialized = true;
-        
-        return true;
-    } catch (error) {
-        console.error('Database initialization error:', error);
-        const errorMessages = document.getElementById('errorMessages');
-        if (errorMessages) {
-            errorMessages.innerHTML = `
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <strong>Database Error:</strong> Unable to initialize database. Please try again later.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            `;
-        }
-        return false;
-    }
-}
-
-document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        console.log('Initializing services...');
-        
-        // Initialize database first
-        const dbStatus = await testDatabaseConnection();
-        if (!dbStatus) {
-            throw new Error('Database initialization failed');
-        }
-        
-        // Initialize email service
-        await initializeEmailJS();
-        
-        // Start monitoring services
-        monitorDatabaseHealth();
-        monitorEmailHealth();
-        
-        console.log('All services initialized successfully');
-    } catch (error) {
-        console.error('Service initialization error:', error);
-        const errorMessages = document.getElementById('errorMessages');
-        if (errorMessages) {
-            errorMessages.innerHTML = `
-                <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                    <strong>Warning:</strong> Some services may be unavailable. Please try again later.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            `;
-        }
-    }
-    
-    document.getElementsByClassName("tablinks")[0]?.click();
-});
-
-function showSuccessMessage(message, formId) {
-    const form = document.getElementById(formId);
-    const successAlert = document.createElement('div');
-    successAlert.className = 'alert alert-success alert-dismissible fade show mt-3';
-    successAlert.innerHTML = `
-        <strong>Success!</strong> ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    `;
-    form.after(successAlert);
-    
-    setTimeout(() => {
-        successAlert.remove();
-    }, 5000);
-}
-
-function showErrorMessage(message, elementId) {
-    const errorDiv = document.getElementById(elementId);
-    if (errorDiv) {
-        errorDiv.innerHTML = `
-            <strong>Error:</strong> ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
-        errorDiv.style.display = 'block';
-        
-        setTimeout(() => {
-            errorDiv.style.display = 'none';
-        }, 5000);
-    }
-}
-
-function createFloatingPaws() {
-    const pawBackground = document.getElementById('pawBackground');
-    const pawSymbols = ['🐾', '🐱', '🐶'];
-    
-    setInterval(() => {
-        const paw = document.createElement('span');
-        paw.className = 'paw';
-        paw.textContent = pawSymbols[Math.floor(Math.random() * pawSymbols.length)];
-        paw.style.left = Math.random() * 100 + 'vw';
-        paw.style.animationDuration = (Math.random() * 3 + 5) + 's';
-        pawBackground.appendChild(paw);
-        
-        setTimeout(() => {
-            pawBackground.removeChild(paw);
-        }, 8000);
-    }, 2000);
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    createFloatingPaws();
-});
-
-function openTab(evt, tabName) {
-    let tabcontent = document.getElementsByClassName("tabcontent");
-    for (let i = 0; i < tabcontent.length; i++) {
-        tabcontent[i].style.display = "none";  
-    }
-    
-    let tablinks = document.getElementsByClassName("tablinks");
-    for (let i = 0; i < tablinks.length; i++) {
-        tablinks[i].className = tablinks[i].className.replace(" active", "");
-    }
-    
-    document.getElementById(tabName).style.display = "block";  
-    evt.currentTarget.className += " active";
-}
-
-async function shareOnSocial(platform) {
-    const url = encodeURIComponent(window.location.href);
-    const donateUrl = encodeURIComponent('https://www.paypal.com/paypalme/PetAlertPortal');
-    const text = encodeURIComponent("Help us protect and rescue animals in need through the Pet Alert Portal! Donate here: " + donateUrl);
-    
-    let shareUrl = '';
-    if (platform === 'facebook') {
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`;
-    } else if (platform === 'twitter') {
-        shareUrl = `https://twitter.com/intent/tweet?url=${url}&text=${text}`;
-    }
-    
-    window.open(shareUrl, '_blank', 'width=600,height=400');
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementsByClassName("tablinks")[0].click();
-});
-
-const subscriptionForm = document.getElementById('subscriptionForm');
-if (subscriptionForm) {
-    subscriptionForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const formData = {
-            email: document.getElementById('subscriberEmail').value,
-            phone: document.getElementById('subscriberPhone').value,
-            emailAlerts: document.getElementById('emailAlerts').checked,
-            smsAlerts: document.getElementById('smsAlerts').checked
-        };
-
-        if (!formData.emailAlerts && !formData.smsAlerts) {
-            showErrorMessage('Please select at least one type of alert (Email or SMS)', 'subscriptionErrorMessages');
-            return;
-        }
-
-        if (formData.emailAlerts && !formData.email) {
-            showErrorMessage('Email address is required for email alerts', 'subscriptionErrorMessages');
-            return;
-        }
-
-        if (formData.smsAlerts && !formData.phone) {
-            showErrorMessage('Phone number is required for SMS alerts', 'subscriptionErrorMessages');
-            return;
-        }
-
-        try {
-            await handleSubscription(formData);
-        } catch (error) {
-            console.error('Subscription error:', error);
-            showErrorMessage('Failed to process subscription. Please try again.', 'subscriptionErrorMessages');
-        }
-    });
-}
-</script>
 
 <style>
+/* Core styles */
 body {
     font-family: 'Arial', sans-serif;
     background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     min-height: 100vh;
+    margin: 0;
     padding: 20px;
 }
 
 .container {
-    background-color: rgba(255, 255, 255, 0.95);
-    border-radius: 15px;
-    padding: 30px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.1);
-}
-
-.tab {
-    overflow: hidden;
-    background-color: #f1f1f1;
-    border-radius: 10px;
-}
-
-.tab button {
-    background-color: inherit;
-    border: none;
-    outline: none;
-    cursor: pointer;
-    padding: 14px 16px;
-    transition: 0.3s;
-}
-
-.tab button:hover {
-    background-color: #ddd;
-}
-
-.tab button.active {
-    background-color: #ccc;
-}
-
-.tabcontent {
-    display: none;
+    max-width: 1200px;
+    margin: 0 auto;
     padding: 20px;
-    border: 1px solid #ccc;
-    border-top: none;
-    border-radius: 0 0 10px 10px;
-}
-
-.hero-section {
-    background: linear-gradient(135deg, #e8f4f8, #d1e8f0);
-    padding: 60px 0;
-    margin-bottom: 40px;
+    background: rgba(255, 255, 255, 0.95);
     border-radius: 20px;
-    box-shadow: 0 8px 25px rgba(52, 152, 219, 0.15);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
-.hero-section svg {
-    width: 120px;
-    height: 120px;
-    margin-bottom: 25px;
-    animation: float 6s ease-in-out infinite;
-}
-
-@keyframes pawFloat {
-    0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
-    50% { opacity: 0.1; }
-    100% { transform: translate(100px, -100px) rotate(20deg); opacity: 0; }
-}
-
-.paw-background {
+/* Hero Section */
+.hero-section {
+    text-align: center;
+    padding: 80px 0;
+    margin-bottom: 40px;
+    background: linear-gradient(135deg, #e8f4f8 0%, #d1e8f0 50%, #c3e0ec 100%);
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(52, 152, 219, 0.2);
+    position: relative;
     overflow: hidden;
 }
 
-.paw {
-    color: #3498db;
-    opacity: 0.05;
+.hero-section::before {
+    content: '';
     position: absolute;
-    animation: pawFloat 8s infinite linear;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 5C55 5 60 10 60 15C60 20 55 25 50 25C45 25 40 20 40 15C40 10 45 5 50 5Z' fill='rgba(52, 152, 219, 0.05)'/%3E%3C/svg%3E") repeat;
+    opacity: 0.1;
+    z-index: 0;
 }
 
-.app-title {
-    color: #2c3e50;
-    text-align: center;
+.hero-logo {
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.1));
+    transition: transform 0.5s ease;
+}
+
+.hero-logo:hover {
+    transform: scale(1.05) rotate(5deg);
+}
+
+.text-gradient {
+    background: linear-gradient(45deg, #2c3e50, #3498db);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700;
+    position: relative;
+    z-index: 1;
+}
+
+.hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 40px;
+    position: relative;
+    z-index: 1;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.stat-item:hover {
+    transform: translateY(-5px);
+}
+
+.stat-item i {
+    font-size: 24px;
+    color: #3498db;
+    margin-bottom: 10px;
+}
+
+.stat-count {
+    font-size: 24px;
     font-weight: bold;
-    margin-bottom: 30px;
-    font-size: 2.5em;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-}
-
-.description {
-    text-align: center;
-    color: #34495e;
-    font-size: 1.2em;
-    margin-bottom: 30px;
-    font-weight: 500;
-}
-
-.form-label {
-    font-weight: bold;
     color: #2c3e50;
 }
 
+.stat-label {
+    font-size: 14px;
+    color: #7f8c8d;
+}
+
+@media (max-width: 768px) {
+    .hero-stats {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .stat-item {
+        width: 100%;
+        max-width: 250px;
+        margin: 0 auto;
+    }
+    
+    .hero-section {
+        padding: 40px 20px;
+    }
+}
+
+/* Add animation for stats */
+@keyframes countUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.stat-item {
+    animation: countUp 0.8s ease-out forwards;
+}
+
+.stat-item:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.stat-item:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+/* Navigation Tabs */
+.nav-tabs {
+    border: none;
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    background: #f8f9fa;
+    color: #495057;
+    border-radius: 15px;
+    padding: 15px 30px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.nav-tabs .nav-link:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.nav-tabs .nav-link.active {
+    background: #3498db;
+    color: white;
+}
+
+/* Forms */
 .form-control, .form-select {
     border-radius: 12px;
-    border: 2px solid #e8f4f8;
+    border: 2px solid #e9ecef;
     padding: 12px;
     transition: all 0.3s ease;
 }
@@ -615,6 +187,7 @@ body {
     transform: translateY(-2px);
 }
 
+/* Buttons */
 .btn {
     border-radius: 12px;
     padding: 12px 25px;
@@ -634,283 +207,752 @@ body {
     border: none;
 }
 
+.btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+/* Animations */
+.fade-in {
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Status Indicators */
+.status-badge {
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: 600;
+}
+
+.status-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Loading Overlay */
 .loading-overlay {
-    display: none;
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(255,255,255,0.8);
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
+    z-index: 9999;
+    visibility: hidden;
+    opacity: 0;
+    transition: all 0.3s ease;
 }
 
 .loading-overlay.active {
-    display: flex;
+    visibility: visible;
+    opacity: 1;
 }
 
-.status-indicator {
-    background: linear-gradient(145deg, #ffffff, #f8f9fa);
-    border-radius: 15px;
-    padding: 20px;
-    margin: 25px 0;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+    
+    .nav-tabs {
+        flex-direction: column;
+    }
+    
+    .nav-tabs .nav-link {
+        margin-bottom: 10px;
+    }
+    
+    .hero-section {
+        padding: 40px 20px;
+    }
+    
+    .hero-section img {
+        max-width: 150px;
+    }
 }
 
-.pet-counter {
-    background: linear-gradient(45deg, #3498db, #2ecc71);
-    border-radius: 20px;
-    padding: 30px;
-    color: white;
-    text-align: center;
-    margin: 30px 0;
-    box-shadow: 0 10px 20px rgba(52, 152, 219, 0.2);
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
 }
 
-.counter-number {
-    font-size: 3.5em;
-    font-weight: bold;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
 }
 
-.success-stories {
-    background: linear-gradient(to right, #fff, #f8f9fa);
-    padding: 20px;
-    border-radius: 15px;
-    margin: 20px 0;
+::-webkit-scrollbar-thumb {
+    background: #3498db;
+    border-radius: 10px;
 }
 
-.story-card {
-    background: linear-gradient(145deg, #ffffff, #f8f9fa);
-    border-radius: 15px;
-    padding: 25px;
-    margin: 15px 0;
-    border-left: 5px solid #3498db;
-    transition: all 0.3s ease;
+::-webkit-scrollbar-thumb:hover {
+    background: #2980b9;
 }
 
-.story-card:hover {
-    transform: translateY(-5px) scale(1.02);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+/* Floating Paws */
+.floating-paw {
+    position: absolute;
+    opacity: 0.1;
+    animation: floatPaw 10s linear infinite;
+    pointer-events: none;
 }
 
-.volunteer-section {
-    background: linear-gradient(135deg, #f0f9ff, #e1f2fa);
-    border-radius: 20px;
-    padding: 40px;
-    margin-top: 50px;
-    box-shadow: 0 8px 25px rgba(52, 152, 219, 0.15);
+@keyframes floatPaw {
+    0% {
+        transform: translateY(100vh) rotate(0deg);
+    }
+    100% {
+        transform: translateY(-100px) rotate(360deg);
+    }
 }
 
-.donation-section {
-    background: linear-gradient(135deg, #fff5f5, #fff0f0);
-    border-radius: 20px;
-    padding: 40px;
-    margin: 40px 0;
-    box-shadow: 0 8px 25px rgba(52, 152, 219, 0.15);
+/* Enhance form validation styles */
+.form-control.is-invalid,
+.form-select.is-invalid {
+    border-color: #dc3545;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(.375em + .1875rem) center;
+    background-size: calc(.75em + .375rem) calc(.75em + .375rem);
 }
 
-.qr-code img {
-    border-radius: 15px;
-    padding: 10px;
-    background: white;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+/* Enhance loading overlay */
+.loading-overlay {
+    backdrop-filter: blur(5px);
 }
 
-.qr-code img:hover {
-    transform: scale(1.05);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-}
-
-hr {
-    border: 0;
-    height: 2px;
-    background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(52, 152, 219, 0.75), rgba(0, 0, 0, 0));
-    margin: 40px 0;
-}
-
-.donation-btn {
-    transition: all 0.3s ease;
-    margin: 10px;
-    width: 180px;
-}
-
-.donation-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-}
-
-.share-buttons button {
-    width: 180px;
-    margin: 5px;
-    transition: all 0.3s ease;
-}
-
-.share-buttons button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-}
-
-.btn-info {
-    background-color: #1DA1F2;
-    color: white;
-}
-
-.btn-info:hover {
-    background-color: #1991db;
-    color: white;
-}
-
-.form-check {
-    margin-top: 1rem;
-}
-
-.form-check-input:checked {
-    background-color: #2ecc71;
-    border-color: #2ecc71;
+.loading-overlay .spinner-border {
+    width: 3rem;
+    height: 3rem;
 }
 </style>
+
+<script>
+async function executeQuery(query, params = []) {
+    try {
+        // Encode parameters properly
+        const queryParams = params.map(p => typeof p === 'string' ? encodeURIComponent(p) : p);
+        
+        const response = await fetch('/api/v1/sql/?' + new URLSearchParams({
+            sql: query,
+            params: JSON.stringify(queryParams)
+        }));
+
+        if (!response.ok) {
+            throw new Error(`Database error: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Database operation failed:', error);
+        throw new Error('Database operation failed: ' + error.message);
+    }
+}
+
+async function initializeApp() {
+    try {
+        if (!document.querySelector('.container')) {
+            throw new Error('Required DOM elements not found');
+        }
+
+        // Show loading overlay during initialization
+        showLoadingOverlay();
+        
+        // Create status indicator
+        createStatusIndicator();
+        
+        // Initialize EmailJS with proper error handling
+        try {
+            await emailjs.init("jvRz2wFY1kqzz5Cmy");
+            console.log('EmailJS initialized successfully');
+        } catch (emailError) {
+            console.error('EmailJS initialization failed:', emailError);
+            throw new Error('Email service initialization failed');
+        }
+        
+        // Initialize Database with proper error handling
+        try {
+            await initializeDatabase();
+            console.log('Database initialized successfully');
+        } catch (dbError) {
+            console.error('Database initialization failed:', dbError);
+            throw new Error('Database initialization failed');
+        }
+        
+        // Setup event listeners
+        try {
+            setupEventListeners();
+            console.log('Event listeners setup successfully');
+        } catch (eventError) {
+            console.error('Event listener setup failed:', eventError);
+            throw new Error('Event listener setup failed');
+        }
+        
+        // Initialize floating paws animation
+        try {
+            createFloatingPaws();
+            console.log('Floating paws animation initialized');
+        } catch (animError) {
+            console.error('Animation initialization failed:', animError);
+            // Non-critical error, don't throw
+        }
+
+        // Hide loading overlay on successful initialization
+        hideLoadingOverlay();
+        
+        // Show success message
+        showSuccessMessage('Application initialized successfully!');
+        
+    } catch (error) {
+        console.error('Initialization error:', error);
+        hideLoadingOverlay();
+        showErrorMessage(`${error.message}. Please refresh the page or contact support if the problem persists.`);
+    }
+}
+
+async function initializeDatabase() {
+    try {
+        const reportTableQuery = `
+            CREATE TABLE IF NOT EXISTS reports (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                reporter_name TEXT NOT NULL,
+                contact TEXT NOT NULL,
+                animal_type TEXT NOT NULL,
+                health_status TEXT NOT NULL,
+                behavior TEXT NOT NULL,
+                location TEXT NOT NULL,
+                description TEXT,
+                urgency TEXT NOT NULL,
+                status TEXT DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `;
+
+        await executeQuery(reportTableQuery);
+        console.log('Reports table initialized successfully');
+        return true;
+    } catch (error) {
+        console.error('Database initialization error:', error);
+        throw new Error(`Failed to initialize reports table: ${error.message}`);
+    }
+}
+
+function validateForm(formElement) {
+    const inputs = formElement.querySelectorAll('input, select, textarea');
+    let isValid = true;
+    
+    inputs.forEach(input => {
+        if (input.hasAttribute('required') && !input.value.trim()) {
+            isValid = false;
+            input.classList.add('is-invalid');
+            
+            // Add validation feedback
+            let feedback = input.nextElementSibling;
+            if (!feedback || !feedback.classList.contains('invalid-feedback')) {
+                feedback = document.createElement('div');
+                feedback.className = 'invalid-feedback';
+                feedback.textContent = 'This field is required';
+                input.after(feedback);
+            }
+        } else {
+            input.classList.remove('is-invalid');
+        }
+    });
+    
+    return isValid;
+}
+
+async function handleReportSubmit(event) {
+    event.preventDefault();
+    
+    if (!validateForm(event.target)) {
+        showErrorMessage('Please fill in all required fields');
+        return;
+    }
+    
+    try {
+        showLoadingOverlay();
+        
+        // Sanitize form data
+        const formData = {
+            reporter_name: DOMPurify.sanitize(document.getElementById('reporterName').value),
+            contact: DOMPurify.sanitize(document.getElementById('reporterContact').value),
+            animal_type: DOMPurify.sanitize(document.getElementById('animalType').value),
+            health_status: DOMPurify.sanitize(document.getElementById('healthStatus').value),
+            behavior: DOMPurify.sanitize(document.getElementById('behavior').value),
+            location: DOMPurify.sanitize(document.getElementById('locationDetails').value),
+            description: DOMPurify.sanitize(document.getElementById('description').value),
+            urgency: DOMPurify.sanitize(document.getElementById('urgency').value)
+        };
+
+        // Use parameterized query
+        const query = `
+            INSERT INTO reports 
+            (reporter_name, contact, animal_type, health_status, behavior, location, description, urgency) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        
+        const params = [
+            formData.reporter_name,
+            formData.contact,
+            formData.animal_type,
+            formData.health_status,
+            formData.behavior,
+            formData.location,
+            formData.description,
+            formData.urgency
+        ];
+
+        // Execute query with parameters
+        await executeQuery(query, params);
+
+        // Send email notification with better error handling
+        try {
+            await emailjs.send("service_default", "template_report", {
+                reporter_name: formData.reporter_name,
+                contact: formData.contact,
+                animal_type: formData.animal_type,
+                urgency: formData.urgency
+            });
+        } catch (emailError) {
+            console.error('Email notification failed:', emailError);
+            // Continue execution even if email fails
+        }
+
+        hideLoadingOverlay();
+        showSuccessMessage('Report submitted successfully!');
+        event.target.reset();
+        
+    } catch (error) {
+        console.error('Report submission failed:', error);
+        hideLoadingOverlay();
+        showErrorMessage('Failed to submit report. Please try again. Error: ' + error.message);
+    }
+}
+
+async function handleVolunteerSubmit(event) {
+    event.preventDefault();
+    
+    if (!validateForm(event.target)) {
+        showErrorMessage('Please fill in all required fields');
+        return;
+    }
+    
+    try {
+        showLoadingOverlay();
+        
+        // Gather form data
+        const formData = {
+            name: document.getElementById('volunteerName').value,
+            email: document.getElementById('volunteerEmail').value,
+            phone: document.getElementById('volunteerPhone').value,
+            availability: document.getElementById('availability').value,
+            skills: document.getElementById('skills').value,
+            experience_level: document.getElementById('experienceLevel').value,
+            preferred_animals: Array.from(document.getElementById('preferredAnimals').selectedOptions).map(opt => opt.value).join(','),
+            has_transportation: document.getElementById('transportation').checked
+        };
+
+        // Insert into database
+        const query = `INSERT INTO volunteers 
+            (name, email, phone, availability, skills, experience_level, preferred_animals, has_transportation) 
+            VALUES 
+            (?, ?, ?, ?, ?, ?, ?, ?)`;
+             
+        const params = [
+            formData.name,
+            formData.email,
+            formData.phone,
+            formData.availability,
+            formData.skills,
+            formData.experience_level,
+            formData.preferred_animals,
+            formData.has_transportation ? 1 : 0
+        ];
+
+        await executeQuery(query, params);
+
+        // Send email confirmation
+        await emailjs.send("service_default", "template_volunteer", {
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone
+        });
+
+        hideLoadingOverlay();
+        showStatusMessage('Thank you for volunteering! We will contact you soon.', 'success');
+        event.target.reset();
+        
+    } catch (error) {
+        console.error('Volunteer submission failed:', error);
+        hideLoadingOverlay();
+        showErrorMessage('Failed to submit volunteer application. Please try again.');
+    }
+}
+
+async function handleSubscriptionSubmit(event) {
+    event.preventDefault();
+    
+    try {
+        // Validate that at least one alert type is selected
+        const emailAlerts = document.getElementById('emailAlerts').checked;
+        const smsAlerts = document.getElementById('smsAlerts').checked;
+        const email = document.getElementById('subscriberEmail').value.trim();
+        const phone = document.getElementById('subscriberPhone').value.trim();
+
+        // Enhanced validation
+        if (!emailAlerts && !smsAlerts) {
+            throw new Error('Please select at least one type of alert (Email or SMS)');
+        }
+
+        if (emailAlerts && !email) {
+            throw new Error('Email address is required for email alerts');
+        }
+
+        if (smsAlerts && !phone) {
+            throw new Error('Phone number is required for SMS alerts');
+        }
+
+        if (email && !isValidEmail(email)) {
+            throw new Error('Please enter a valid email address');
+        }
+
+        if (phone && !isValidPhone(phone)) {
+            throw new Error('Please enter a valid phone number');
+        }
+
+        showLoadingOverlay();
+
+        // Sanitize the input data
+        const sanitizedData = {
+            email: DOMPurify.sanitize(email),
+            phone: DOMPurify.sanitize(phone),
+            email_alerts: emailAlerts,
+            sms_alerts: smsAlerts
+        };
+
+        // Insert into database with parameterized query
+        const query = `INSERT INTO subscribers 
+            (email, phone, email_alerts, sms_alerts) 
+            VALUES 
+            (?, ?, ?, ?)`;
+
+        const params = [
+            sanitizedData.email || null,
+            sanitizedData.phone || null,
+            sanitizedData.email_alerts ? 1 : 0,
+            sanitizedData.sms_alerts ? 1 : 0
+        ];
+
+        const result = await executeQuery(query, params);
+
+        // Send confirmation email if email alerts are enabled
+        if (sanitizedData.email_alerts) {
+            await emailjs.send("service_default", "template_subscription", {
+                email: sanitizedData.email,
+                alert_type: sanitizedData.sms_alerts ? "Email and SMS" : "Email only"
+            });
+        }
+
+        hideLoadingOverlay();
+        showSuccessMessage('Subscription completed successfully! You will receive a confirmation shortly.');
+        event.target.reset();
+        
+    } catch (error) {
+        console.error('Subscription failed:', error);
+        hideLoadingOverlay();
+        showErrorMessage(error.message || 'Failed to complete subscription. Please try again.');
+    }
+}
+
+// Add these helper validation functions
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+function isValidPhone(phone) {
+    const phoneRegex = /^\+?[\d\s-]{10,}$/;
+    return phoneRegex.test(phone);
+}
+
+// Update setupEventListeners function to include error handling
+function setupEventListeners() {
+    try {
+        // Report Form
+        const reportForm = document.getElementById('reportForm');
+        if (!reportForm) {
+            throw new Error('Report form not found');
+        }
+        reportForm.addEventListener('submit', handleReportSubmit);
+        
+        // Volunteer Form
+        const volunteerForm = document.getElementById('volunteerForm');
+        if (!volunteerForm) {
+            throw new Error('Volunteer form not found');
+        }
+        volunteerForm.addEventListener('submit', handleVolunteerSubmit);
+        
+        // Subscription Form
+        const subscriptionForm = document.getElementById('subscriptionForm');
+        if (!subscriptionForm) {
+            throw new Error('Subscription form not found');
+        }
+        subscriptionForm.addEventListener('submit', handleSubscriptionSubmit);
+        
+        console.log('Event listeners setup successfully');
+    } catch (error) {
+        console.error('Event listener setup failed:', error);
+        throw new Error('Event listener setup failed: ' + error.message);
+    }
+}
+
+function createStatusIndicator() {
+    const existingIndicator = document.querySelector('.status-indicator');
+    if (existingIndicator) {
+        existingIndicator.remove();
+    }
+
+    const statusIndicator = document.createElement('div');
+    statusIndicator.className = 'status-indicator position-fixed bottom-0 end-0 m-3';
+    statusIndicator.innerHTML = `
+        <div class="card shadow-sm">
+            <div class="card-body p-2">
+                <small class="text-muted">Service Status:</small>
+                <div class="d-flex gap-2 align-items-center">
+                    <span class="badge bg-success">Connected</span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    if (document.body) {
+        document.body.appendChild(statusIndicator);
+    }
+}
+
+function showErrorMessage(message) {
+    const container = document.querySelector('.container');
+    if (!container) {
+        console.error('Container element not found');
+        return;
+    }
+
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+    alertDiv.innerHTML = `
+        <strong>Error:</strong> ${message}
+        <br>
+        <small>If this problem persists, please contact support at support@petalertportal.com</small>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    container.prepend(alertDiv);
+}
+
+function showSuccessMessage(message) {
+    const container = document.querySelector('.container');
+    if (!container) {
+        console.error('Container element not found');
+        return;
+    }
+
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show';
+    alertDiv.innerHTML = `
+        <strong>Success:</strong> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    container.prepend(alertDiv);
+}
+
+function showLoadingOverlay() {
+    const overlay = document.querySelector('.loading-overlay');
+    if (overlay) {
+        overlay.classList.add('active');
+    }
+}
+
+function hideLoadingOverlay() {
+    const overlay = document.querySelector('.loading-overlay');
+    if (overlay) {
+        overlay.classList.remove('active');
+    }
+}
+
+function createFloatingPaws() {
+    const pawBackground = document.getElementById('pawBackground');
+    if (!pawBackground) {
+        console.warn('Paw background element not found');
+        return;
+    }
+    
+    // Create SVG paw element
+    const pawSVG = `
+        <svg width="30" height="30" viewBox="0 0 100 100">
+            <path d="M50 5C55 5 60 10 60 15C60 20 55 25 50 25C45 25 40 20 40 15C40 10 45 5 50 5Z" />
+            <path d="M30 25C35 25 40 30 40 35C40 40 35 45 30 45C25 45 20 40 20 35C20 30 25 25 30 25Z" />
+            <path d="M70 25C75 25 80 30 80 35C80 40 75 45 70 45C65 45 60 40 60 35C60 30 65 25 70 25Z" />
+<path d="M50 35C65 35 75 50 75 65C75 80 65 85 50 85C35 85 25 80 25 65C25 50 35 35 50 35Z" />
+        </svg>`;
+    
+    // Create 10 floating paws
+    for (let i = 0; i < 10; i++) {
+        const paw = document.createElement('div');
+        paw.className = 'floating-paw';
+        paw.innerHTML = pawSVG;
+        paw.style.left = `${Math.random() * 100}%`;
+        paw.style.animationDelay = `${Math.random() * 5}s`;
+        pawBackground.appendChild(paw);
+    }
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+    try {
+        await initializeApp();
+    } catch (error) {
+        console.error('Application initialization failed:', error);
+        showErrorMessage('Failed to initialize application. Please refresh the page.');
+    }
+});
+</script>
 </head>
 <body>
+
 <div class="container">
-    <div class="paw-background" id="pawBackground"></div>
-
-    <div class="hero-section">
-        <svg class="hero-image" viewBox="0 0 512 512">
-            <path fill="#3498db" d="M256 224c-79.41 0-192 122.76-192 200.25 0 34.9 26.81 55.75 71.74 55.75 48.84 0 81.09-25.08 120.26-25.08 39.51 0 71.85 25.08 120.26 25.08 44.93 0 71.74-20.85 71.74-55.75C448 346.76 335.41 224 256 224zm-147.28-12.61c-10.4-34.65-42.44-57.09-71.56-50.13-29.12 6.96-44.29 40.69-33.89 75.34 10.4 34.65 42.44 57.09 71.56 50.13 29.12-6.96 44.29-40.69 33.89-75.34zm84.72-20.78c30.94-8.14 46.42-49.94 34.58-93.36s-46.52-72.01-77.46-63.87-46.42 49.94-34.58 93.36c11.84 43.42 46.53 72.02 77.46 63.87zm281.39-29.34c-29.12-6.96-61.15 15.48-71.56 50.13-10.4 34.65 4.77 68.38 33.89 75.34 29.12 6.96 61.15-15.48 71.56-50.13 10.4-34.65-4.77-68.38-33.89-75.34zm-156.27 29.34c30.94 8.14 65.62-20.45 77.46-63.87 11.84-43.42-3.64-85.21-34.58-93.36s-65.62 20.45-77.46 63.87c-11.84 43.42 3.64 85.22 34.58 93.36z"/>
-        </svg>
-        <h1 class="app-title" style="color: #3498db;">Pet Alert Portal</h1>
-        <p class="description">Every animal deserves love, care, and safety. Together, we can make a difference!</p>
-    </div>
-
-    <div class="pet-counter">
-        <h3>Lives Impacted</h3>
-        <div class="counter-number" id="rescueCounter">0</div>
-        <p>Animals helped through our community</p>
-    </div>
-
-    <div class="success-stories">
-        <h3 class="text-center mb-4">Recent Success Stories</h3>
-        <div class="row" id="successStories">
-            <!-- Stories will be populated dynamically -->
+    <div id="pawBackground" class="paw-background"></div>
+    
+    <div class="hero-section fade-in">
+        <img src="https://images.websim.ai/v1/icons/pet-alert-portal" 
+             alt="Pet Alert Portal Logo - A paw print inside a heart" 
+             class="mb-4 hero-logo"
+             width="200"
+             height="200">
+        <h1 class="display-4 mb-3 text-gradient">Pet Alert Portal</h1>
+        <p class="lead mb-4">Together we can make a difference in animal welfare</p>
+        <div class="hero-stats">
+            <div class="stat-item">
+                <i class="fas fa-paw"></i>
+                <span class="stat-count">100+</span>
+                <span class="stat-label">Animals Helped</span>
+            </div>
+            <div class="stat-item">
+                <i class="fas fa-users"></i>
+                <span class="stat-count">50+</span>
+                <span class="stat-label">Active Volunteers</span>
+            </div>
+            <div class="stat-item">
+                <i class="fas fa-heart"></i>
+                <span class="stat-count">200+</span>
+                <span class="stat-label">Community Members</span>
+            </div>
         </div>
     </div>
-
-    <h1 class="app-title">Pet Alert Portal</h1>
-    <p class="description">Help us protect and rescue animals in need. Your report can make a difference in saving a life and ensuring the safety of vulnerable animals in our community.</p>
-
-    <div class="status-indicator" id="systemStatus">
-        <div id="databaseStatus">Database: Checking...</div>
-        <div id="emailStatus">Email Service: Checking...</div>
-    </div>
-
-    <div class="tab">
-        <button class="tablinks" onclick="openTab(event, 'ReportTab')">Report an Animal</button>
-        <button class="tablinks" onclick="openTab(event, 'VolunteerTab')">Volunteer</button>
-        <button class="tablinks" onclick="openTab(event, 'SubscriptionTab')">Subscribe to Alerts</button>
-    </div>
-
-    <div id="ReportTab" class="tabcontent">
-        <form id="reportForm" class="needs-validation" novalidate>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label for="reporterName" class="form-label">Your Name</label>
-                    <input type="text" class="form-control" id="reporterName" required>
+    
+    <ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#reportTab">Report Animal</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#volunteerTab">Volunteer</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#subscribeTab">Subscribe to Alerts</a>
+        </li>
+    </ul>
+    
+    <div class="tab-content">
+        <!-- Report Animal Tab -->
+        <div id="reportTab" class="tab-pane fade show active">
+            <form id="reportForm" class="needs-validation" novalidate>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="reporterName" class="form-label">Your Name</label>
+                        <input type="text" class="form-control" id="reporterName" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="reporterContact" class="form-label">Contact Information</label>
+                        <input type="text" class="form-control" id="reporterContact" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="animalType" class="form-label">Animal Type</label>
+                        <select class="form-select" id="animalType" required>
+                            <option value="">Choose...</option>
+                            <optgroup label="Domestic Animals">
+                                <option value="Dog">Dog</option>
+                                <option value="Cat">Cat</option>
+                                <option value="Rabbit">Rabbit</option>
+                                <option value="Bird">Bird (Pet)</option>
+                            </optgroup>
+                            <optgroup label="Wildlife">
+                                <option value="Bird-Wild">Bird (Wild)</option>
+                                <option value="Deer">Deer</option>
+                                <option value="Fox">Fox</option>
+                                <option value="Other-Wildlife">Other Wildlife</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="healthStatus" class="form-label">Health Status</label>
+                        <select class="form-select" id="healthStatus" required>
+                            <option value="">Choose...</option>
+                            <option>Critical</option>
+                            <option>Injured</option>
+                            <option>Appears Healthy</option>
+                            <option>Unknown</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label for="behavior" class="form-label">Behavior</label>
+                        <textarea class="form-control" id="behavior" rows="2" required></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label for="locationDetails" class="form-label">Location Details</label>
+                        <textarea class="form-control" id="locationDetails" rows="2" required></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label for="description" class="form-label">Additional Description</label>
+                        <textarea class="form-control" id="description" rows="3"></textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="urgency" class="form-label">Urgency Level</label>
+                        <select class="form-select" id="urgency" required>
+                            <option value="">Choose...</option>
+                            <option>Immediate Response Needed</option>
+                            <option>Urgent</option>
+                            <option>Non-urgent</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="col-md-6">
-                    <label for="reporterContact" class="form-label">Contact Information</label>
-                    <input type="text" class="form-control" id="reporterContact" required>
+                <div class="d-grid gap-2 col-md-6 mx-auto mt-4">
+                    <button type="submit" class="btn btn-primary">Submit Report</button>
                 </div>
-                <div class="col-md-6">
-                    <label for="animalType" class="form-label">Animal Type</label>
-                    <select class="form-select" id="animalType" required>
-                        <option value="">Choose...</option>
-                        <optgroup label="Domestic Animals">
-                            <option value="Dog">Dog</option>
-                            <option value="Cat">Cat</option>
-                            <option value="Rabbit">Rabbit</option>
-                            <option value="Bird">Bird (Pet)</option>
-                            <option value="Hamster">Hamster</option>
-                            <option value="Guinea Pig">Guinea Pig</option>
-                            <option value="Ferret">Ferret</option>
-                        </optgroup>
-                        <optgroup label="Wildlife">
-                            <option value="Bird-Wild">Bird (Wild)</option>
-                            <option value="Deer">Deer</option>
-                            <option value="Raccoon">Raccoon</option>
-                            <option value="Fox">Fox</option>
-                            <option value="Squirrel">Squirrel</option>
-                            <option value="Opossum">Opossum</option>
-                        </optgroup>
-                        <optgroup label="Farm Animals">
-                            <option value="Horse">Horse</option>
-                            <option value="Cow">Cow</option>
-                            <option value="Sheep">Sheep</option>
-                            <option value="Goat">Goat</option>
-                            <option value="Pig">Pig</option>
-                            <option value="Chicken">Chicken</option>
-                        </optgroup>
-                        <optgroup label="Other">
-                            <option value="Reptile">Reptile</option>
-                            <option value="Amphibian">Amphibian</option>
-                            <option value="Other">Other (Specify in Description)</option>
-                        </optgroup>
-                    </select>
-                    <div id="animalTypeHelp" class="form-text">Select the most specific type that applies</div>
-                </div>
-                <div class="col-md-6">
-                    <label for="healthStatus" class="form-label">Health Status</label>
-                    <select class="form-select" id="healthStatus" required>
-                        <option value="">Choose...</option>
-                        <option>Critical</option>
-                        <option>Injured</option>
-                        <option>Appears Healthy</option>
-                        <option>Unknown</option>
-                    </select>
-                </div>
-                <div class="col-12">
-                    <label for="behavior" class="form-label">Behavior</label>
-                    <textarea class="form-control" id="behavior" rows="2" required></textarea>
-                </div>
-                <div class="col-12">
-                    <label for="locationDetails" class="form-label">Location Details</label>
-                    <textarea class="form-control" id="locationDetails" rows="2" required></textarea>
-                </div>
-                <div class="col-12">
-                    <label for="description" class="form-label">Additional Description</label>
-                    <textarea class="form-control" id="description" rows="3"></textarea>
-                </div>
-                <div class="col-md-6">
-                    <label for="urgency" class="form-label">Urgency Level</label>
-                    <select class="form-select" id="urgency" required>
-                        <option value="">Choose...</option>
-                        <option>Immediate Response Needed</option>
-                        <option>Urgent</option>
-                        <option>Non-urgent</option>
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <label for="imageUpload" class="form-label">Upload Image</label>
-                    <input type="file" class="form-control" id="imageUpload" accept="image/*">
-                </div>
-            </div>
-
-            <div class="d-grid gap-2 col-md-6 mx-auto mt-4">
-                <button type="submit" class="btn btn-primary" id="submitReportButton">Submit Report</button>
-            </div>
-        </form>
-
-        <div id="errorMessages" class="alert alert-danger mt-3" style="display: none;"></div>
-    </div>
-
-    <div id="VolunteerTab" class="tabcontent">
-        <div class="volunteer-section">
-            <h2 class="text-center mb-4">Volunteer With Us</h2>
-            <p class="text-center mb-4">Join our network of compassionate volunteers dedicated to helping animals in need. Your time and skills can make a real difference!</p>
-            
+            </form>
+        </div>
+        
+        <!-- Volunteer Tab -->
+        <div id="volunteerTab" class="tab-pane fade">
             <form id="volunteerForm" class="needs-validation" novalidate>
                 <div class="row g-3">
                     <div class="col-md-6">
@@ -929,68 +971,63 @@ hr {
                         <label for="availability" class="form-label">Availability</label>
                         <select class="form-select" id="availability" required>
                             <option value="">Choose...</option>
-                            <option value="Weekdays">Weekdays</option>
-                            <option value="Weekends">Weekends</option>
-                            <option value="Both">Both Weekdays and Weekends</option>
-                            <option value="Flexible">Flexible Schedule</option>
-                            <option value="Emergency">Emergency Response Only</option>
+                            <option>Weekdays</option>
+                            <option>Weekends</option>
+                            <option>Flexible</option>
                         </select>
                     </div>
                     <div class="col-12">
-                        <label for="skills" class="form-label">Relevant Skills or Certifications</label>
-                        <textarea class="form-control" id="skills" rows="2" placeholder="e.g., Veterinary experience, animal handling, first aid certification"></textarea>
+                        <label for="skills" class="form-label">Relevant Skills</label>
+                        <textarea class="form-control" id="skills" rows="2"></textarea>
                     </div>
                     <div class="col-md-6">
                         <label for="experienceLevel" class="form-label">Experience Level</label>
                         <select class="form-select" id="experienceLevel" required>
                             <option value="">Choose...</option>
-                            <option value="Beginner">Beginner - Eager to Learn</option>
-                            <option value="Intermediate">Intermediate - Some Experience</option>
-                            <option value="Advanced">Advanced - Experienced Handler</option>
-                            <option value="Professional">Professional - Certified/Licensed</option>
+                            <option>Beginner</option>
+                            <option>Intermediate</option>
+                            <option>Advanced</option>
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label for="preferredAnimals" class="form-label">Preferred Animals (Multiple Selection)</label>
+                        <label for="preferredAnimals" class="form-label">Preferred Animals</label>
                         <select class="form-select" id="preferredAnimals" multiple required>
-                            <option value="Dogs">Dogs</option>
-                            <option value="Cats">Cats</option>
-                            <option value="Birds">Birds</option>
-                            <option value="Wildlife">Wildlife</option>
-                            <option value="Farm Animals">Farm Animals</option>
-                            <option value="Reptiles">Reptiles</option>
-                            <option value="Any">Any Animals</option>
+                            <option>Dogs</option>
+                            <option>Cats</option>
+                            <option>Birds</option>
+                            <option>Wildlife</option>
                         </select>
                     </div>
                     <div class="col-12">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="transportation">
                             <label class="form-check-label" for="transportation">
-                                I have reliable transportation and am willing to travel for rescues
+                                I have reliable transportation
                             </label>
                         </div>
                     </div>
                 </div>
-
                 <div class="d-grid gap-2 col-md-6 mx-auto mt-4">
-                    <button type="submit" class="btn btn-success">Submit Volunteer Application</button>
+                    <button type="submit" class="btn btn-success">Submit Application</button>
                 </div>
             </form>
-
-            <div id="volunteerErrorMessages" class="alert alert-danger mt-3" style="display: none;"></div>
         </div>
-    </div>
-
-    <div id="SubscriptionTab" class="tabcontent">
-        <div class="notification-preferences-section">
-            <h2 class="text-center mb-4">Stay Informed - Subscribe to Alerts</h2>
-            <p class="text-center mb-4">Receive immediate notifications about animals in need in your area.</p>
-            
+        
+        <!-- Subscribe Tab -->
+        <div id="subscribeTab" class="tab-pane fade">
             <form id="subscriptionForm" class="needs-validation" novalidate>
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label for="subscriberEmail" class="form-label">Email Address</label>
-                        <input type="email" class="form-control" id="subscriberEmail">
+                        <input type="email" 
+                               class="form-control" 
+                               id="subscriberEmail" 
+                               placeholder="your@email.com"
+                               pattern="[^\s@]+@[^\s@]+\.[^\s@]+"
+                               title="Please enter a valid email address">
+                        <div class="invalid-feedback">
+                            Please enter a valid email address
+                        </div>
                         <div class="form-check mt-2">
                             <input class="form-check-input" type="checkbox" id="emailAlerts">
                             <label class="form-check-label" for="emailAlerts">
@@ -1000,7 +1037,15 @@ hr {
                     </div>
                     <div class="col-md-6">
                         <label for="subscriberPhone" class="form-label">Phone Number</label>
-                        <input type="tel" class="form-control" id="subscriberPhone">
+                        <input type="tel" 
+                               class="form-control" 
+                               id="subscriberPhone" 
+                               placeholder="+1 (555) 555-5555"
+                               pattern="\+?[\d\s-]{10,}"
+                               title="Please enter a valid phone number">
+                        <div class="invalid-feedback">
+                            Please enter a valid phone number
+                        </div>
                         <div class="form-check mt-2">
                             <input class="form-check-input" type="checkbox" id="smsAlerts">
                             <label class="form-check-label" for="smsAlerts">
@@ -1008,43 +1053,32 @@ hr {
                             </label>
                         </div>
                     </div>
-                    <div class="col-12">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle"></i> You can customize your alert preferences and unsubscribe at any time.
-                        </div>
-                    </div>
-                    <div class="d-grid gap-2 col-md-6 mx-auto">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-bell"></i> Subscribe to Alerts
-                        </button>
-                    </div>
+                </div>
+                <div class="d-grid gap-2 col-md-6 mx-auto mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-bell"></i> Subscribe
+                    </button>
                 </div>
             </form>
-            <div id="subscriptionErrorMessages" class="alert alert-danger mt-3" style="display: none;"></div>
         </div>
     </div>
-
-    <div class="row align-items-center justify-content-center mt-4 mb-4">
-        <div class="col-md-4 text-center">
-            <button class="btn btn-lg btn-success donation-btn" onclick="window.open('https://www.paypal.com/paypalme/PetAlertPortal', '_blank')">
+    
+    <hr class="my-5">
+    
+    <div class="row align-items-center justify-content-center">
+        <div class="col-md-6 text-center">
+            <h3>Support Our Cause</h3>
+            <p>Your donation helps us continue our mission to protect and rescue animals in need.</p>
+            <button class="btn btn-lg btn-success mb-3" onclick="window.open('https://www.paypal.com/paypalme/PetAlertPortal', '_blank')">
                 <i class="fas fa-heart"></i> Donate Now
             </button>
-        </div>
-        
-        <div class="col-md-4 text-center">
-            <div class="qr-code">
-                <img src="PAYPAL QR CODE.png" alt="PayPal QR Code for donations to Pet Alert Portal" width="200" height="200">
-                <p class="mt-2"><strong>Scan to Donate</strong></p>
-            </div>
-        </div>
-        
-        <div class="col-md-4 text-center">
-            <div class="share-buttons">
-                <button class="btn btn-lg btn-primary mb-2" onclick="shareOnSocial('facebook')">
-                    <i class="fab fa-facebook"></i> Share on Facebook
+            
+            <div class="mt-4">
+                <button class="btn btn-primary me-2" onclick="shareOnSocial('facebook')">
+                    <i class="fab fa-facebook"></i> Share
                 </button>
-                <button class="btn btn-lg btn-info mb-2" onclick="shareOnSocial('twitter')">
-                    <i class="fab fa-twitter"></i> Share on Twitter
+                <button class="btn btn-info" onclick="shareOnSocial('twitter')">
+                    <i class="fab fa-twitter"></i> Tweet
                 </button>
             </div>
         </div>
@@ -1057,24 +1091,5 @@ hr {
     </div>
 </div>
 
-<script>
-async function shareOnSocial(platform) {
-    const url = encodeURIComponent(window.location.href);
-    const donateUrl = encodeURIComponent('https://www.paypal.com/paypalme/PetAlertPortal');
-    const text = encodeURIComponent("Help us protect and rescue animals in need through the Pet Alert Portal! Donate here: " + donateUrl);
-    
-    let shareUrl = '';
-    if (platform === 'facebook') {
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`;
-    } else if (platform === 'twitter') {
-        shareUrl = `https://twitter.com/intent/tweet?url=${url}&text=${text}`;
-    }
-    
-    window.open(shareUrl, '_blank', 'width=600,height=400');
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementsByClassName("tablinks")[0].click();
-});
-</script>
-</body></html>
+</body>
+</html>
