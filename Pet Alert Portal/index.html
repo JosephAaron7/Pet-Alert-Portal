@@ -1,769 +1,1080 @@
-<html lang="en"><head><base href=""/>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <meta name="description" content="Quick animal rescue report submission"/>
-    <title>Pet Alert Portal Report</title>
-    <!-- Minimal CSS -->
-    <link rel="preconnect" href="https://cdn.jsdelivr.net">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" as="style">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol@0.79.0/dist/L.Control.Locate.min.css"/>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        /* Update color palette for better contrast and accessibility */
-        :root {
-            --primary-color: #2563eb;
-            --secondary-color: #0284c7;
-            --accent-color: #f43f5e;
-            --background-color: #f8fafc;
-            --text-color: #1e293b;
-            --border-color: rgba(37, 99, 235, 0.2);
-            --success-color: #10b981;
-            --error-color: #ef4444;
-            --spacing-xs: 0.25rem;
-            --spacing-sm: 0.5rem;
-            --spacing-md: 1rem;
-            --spacing-lg: 1.5rem;
-            --spacing-xl: 2rem;
+<html><head><base href="/">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script type="text/javascript">
+async function testEmailService() {
+    try {
+        await initializeEmailJS();
+        return true;
+    } catch (error) {
+        console.error('Email service test failed:', error);
+        return false;
+    }
+}
+
+async function initializeEmailJS() {
+    return new Promise((resolve, reject) => {
+        try {
+            const maxWaitTime = 5000;
+            const checkInterval = 100;
+
+            const timeoutId = setTimeout(() => {
+                reject(new Error('EmailJS initialization timed out'));
+            }, maxWaitTime);
+
+            const checkEmailJS = () => {
+                if (typeof emailjs !== 'undefined') {
+                    clearTimeout(timeoutId);
+                    emailjs.init("jvRz2wFY1kqzz5Cmy");
+                    console.log('EmailJS initialized successfully');
+                    resolve(true);
+                } else {
+                    setTimeout(checkEmailJS, checkInterval);
+                }
+            };
+
+            checkEmailJS();
+        } catch (error) {
+            reject(error);
         }
-        /* Improve container styling */
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: var(--spacing-xl);
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.95));
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            box-shadow: 
-                0 20px 40px rgba(0, 0, 0, 0.1),
-                0 0 0 1px rgba(255, 255, 255, 0.9) inset;
-        }
-        /* Enhance typography */
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            letter-spacing: -0.011em;
-            line-height: 1.6;
-        }
-        h2 { 
-            font-size: 2.5rem;
-            font-weight: 700;
-            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 1.5rem;
-        }
-        /* Enhanced form elements */
-        .form-control, .form-select {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 16px 20px;
-            border-radius: 12px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    });
+}
+
+async function sendEmailNotification(formData) {
+    try {
+        await initializeEmailJS();
+
+        const templateParams = {
+            to_email: 'premierassetconsulting@gmail.com',
+            reporter_name: formData.reporterName,
+            reporter_contact: formData.reporterContact,
+            animal_type: formData.animalType,
+            health_status: formData.healthStatus,
+            behavior: formData.behavior,
+            location_details: formData.locationDetails,
+            description: formData.description || 'No additional description provided',
+            urgency: formData.urgency,
+            image_url: formData.imageUrl || 'No Image Provided',
+            submission_time: new Date().toLocaleString()
+        };
+
+        const response = await emailjs.send(
+            'service_yu7vixc',
+            'template_hl5u3da',
+            templateParams,
+            'jvRz2wFY1kqzz5Cmy'
+        );
+
+        console.log('Email notification sent successfully:', response);
+        return true;
+    } catch (error) {
+        console.error('Failed to send email notification:', error);
+        throw new Error(`Failed to send email notification: ${error.message}`);
+    }
+}
+
+async function submitReport(formData, type) {
+    try {
+        let templateParams = {};
+        
+        switch(type) {
+            case 'animal':
+                templateParams = {
+                    to_email: 'premierassetconsulting@gmail.com',
+                    subject: 'New Animal Report',
+                    reporter_name: formData.reporterName,
+                    reporter_contact: formData.reporterContact,
+                    animal_type: formData.animalType,
+                    health_status: formData.healthStatus,
+                    behavior: formData.behavior,
+                    location_details: formData.locationDetails,
+                    description: formData.description || 'No additional description provided',
+                    urgency: formData.urgency,
+                    image_url: formData.imageUrl || 'No Image Provided',
+                    submission_time: new Date().toLocaleString()
+                };
+                break;
+                
+            case 'volunteer':
+                templateParams = {
+                    to_email: 'premierassetconsulting@gmail.com',
+                    subject: 'New Volunteer Application',
+                    volunteer_name: formData.name,
+                    volunteer_email: formData.email,
+                    volunteer_phone: formData.phone,
+                    availability: formData.availability,
+                    skills: formData.skills,
+                    has_transportation: formData.transportation ? 'Yes' : 'No',
+                    experience_level: formData.experienceLevel,
+                    preferred_animals: formData.preferredAnimals,
+                    submission_time: new Date().toLocaleString()
+                };
+                break;
+                
+            case 'subscription':
+                templateParams = {
+                    to_email: 'premierassetconsulting@gmail.com',
+                    subject: 'New Alert Subscription',
+                    subscriber_email: formData.email,
+                    subscriber_phone: formData.phone,
+                    email_alerts: formData.emailAlerts ? 'Yes' : 'No',
+                    sms_alerts: formData.smsAlerts ? 'Yes' : 'No',
+                    submission_time: new Date().toLocaleString()
+                };
+                break;
         }
 
-        .form-control:focus, .form-select:focus {
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
-            transform: translateY(-1px);
+        const response = await emailjs.send(
+            'service_yu7vixc',
+            'template_hl5u3da',
+            templateParams,
+            'jvRz2wFY1kqzz5Cmy'
+        );
+
+        console.log(`${type} submission sent successfully:`, response);
+        return true;
+    } catch (error) {
+        console.error(`Failed to submit ${type}:`, error);
+        throw error;
+    }
+}
+
+let dbInitialized = false;
+
+async function testDatabaseConnection() {
+    try {
+        const createTablesQueries = [
+            `CREATE TABLE IF NOT EXISTS animal_reports (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                reporter_name TEXT NOT NULL,
+                contact TEXT NOT NULL,
+                animal_type TEXT NOT NULL,
+                health_status TEXT NOT NULL,
+                behavior TEXT NOT NULL,
+                location TEXT NOT NULL,
+                description TEXT,
+                status TEXT DEFAULT 'New',
+                image_url TEXT,
+                urgency TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`,
+            
+            `CREATE TABLE IF NOT EXISTS alert_subscriptions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT,
+                phone TEXT,
+                receive_email BOOLEAN DEFAULT 0,
+                receive_sms BOOLEAN DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                unsubscribed_at TIMESTAMP NULL,
+                subscription_token TEXT UNIQUE
+            )`,
+            
+            `CREATE TABLE IF NOT EXISTS volunteers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                email TEXT NOT NULL,
+                phone TEXT,
+                availability TEXT NOT NULL,
+                skills TEXT,
+                transportation BOOLEAN,
+                experience_level TEXT NOT NULL,
+                preferred_animals TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`
+        ];
+
+        // Execute each table creation query
+        for (const query of createTablesQueries) {
+            const response = await fetch('/api/v1/sql/?' + new URLSearchParams({sql: query}));
+            if (!response.ok) {
+                throw new Error(`Failed to create table: ${response.status} ${response.statusText}`);
+            }
+            await response.json();
         }
 
-        /* Improved button styling */
-        .btn-custom {
-            background: linear-gradient(145deg, var(--primary-color), var(--secondary-color));
-            padding: 20px 36px;
-            border-radius: 14px;
-            font-weight: 700;
-            letter-spacing: 0.8px;
-            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.4);
-        }
-        .btn-custom:active {
-            transform: scale(0.98);
+        // Test query to verify connection
+        const testQuery = "SELECT 1";
+        const testResponse = await fetch('/api/v1/sql/?' + new URLSearchParams({sql: testQuery}));
+        
+        if (!testResponse.ok) {
+            throw new Error(`Database test failed: ${testResponse.status} ${testResponse.statusText}`);
         }
         
-        /* Emergency Banner */
-        .emergency-banner {
-            max-width: 1000px;
-            margin: 0 auto 2rem auto;
-            background-color: #ef4444;
-            color: white;
-            padding: 1.5rem;
-            text-align: center;
-            border-radius: 12px;
+        console.log('Database connection and tables verified successfully');
+        dbInitialized = true;
+        return true;
+    } catch (error) {
+        console.error('Database connection test failed:', error);
+        dbInitialized = false;
+        return false;
+    }
+}
+
+async function monitorDatabaseHealth() {
+    const statusElement = document.getElementById('databaseStatus');
+    if (!statusElement) return;
+    
+    try {
+        const status = await testDatabaseConnection();
+        statusElement.textContent = `Database: ${status ? 'Connected' : 'Connection Failed'}`;
+        statusElement.style.color = status ? 'green' : 'red';
+        dbInitialized = status;
+        
+        if (!status) {
+            console.warn('Database connection lost, retrying in 5 seconds...');
+            setTimeout(monitorDatabaseHealth, 5000);
+        } else {
+            // If connected, check again in 30 seconds
+            setTimeout(monitorDatabaseHealth, 30000);
         }
-        .emergency-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1rem;
+    } catch (error) {
+        console.error('Database health check failed:', error);
+        statusElement.textContent = 'Database: Connection Failed';
+        statusElement.style.color = 'red';
+        setTimeout(monitorDatabaseHealth, 5000);
+    }
+}
+
+async function handleSubscription(formData) {
+    try {
+        if (!dbInitialized) {
+            await testDatabaseConnection();
         }
-        .stat-card {
-            background: rgba(255, 255, 255, 0.95);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin: 1rem;
-            text-align: center;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+        
+        const subscriptionToken = generateUUID();
+        
+        // Sanitize inputs
+        const sanitizedEmail = formData.email?.replace(/'/g, "''") || null;
+        const sanitizedPhone = formData.phone?.replace(/'/g, "''") || null;
+        
+        // Validate required fields
+        if (formData.emailAlerts && !sanitizedEmail) {
+            throw new Error('Email is required for email alerts');
         }
-        .impact-dashboard {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2rem;
-            max-width: 1000px;
-            margin: 2rem auto;
-            padding: 0 1rem;
+        if (formData.smsAlerts && !sanitizedPhone) {
+            throw new Error('Phone number is required for SMS alerts');
         }
-        /* Progress bar enhancement */
-        .progress {
-            height: 8px;
-            border-radius: 4px;
-            background: rgba(0, 0, 0, 0.05);
+        
+        const query = `
+            INSERT INTO alert_subscriptions 
+            (email, phone, receive_email, receive_sms, subscription_token)
+            VALUES 
+            (${sanitizedEmail ? `'${sanitizedEmail}'` : 'NULL'}, 
+             ${sanitizedPhone ? `'${sanitizedPhone}'` : 'NULL'}, 
+             ${formData.emailAlerts ? 1 : 0}, 
+             ${formData.smsAlerts ? 1 : 0},
+             '${subscriptionToken}')
+        `;
+        
+        const response = await fetch('/api/v1/sql/?' + new URLSearchParams({sql: query}));
+        if (!response.ok) {
+            throw new Error(`Database error: ${response.status} ${response.statusText}`);
         }
-        .progress-bar {
-            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
-            transition: width 0.4s ease;
+        
+        const result = await response.json();
+        console.log('Subscription saved successfully:', result);
+        
+        if (formData.emailAlerts) {
+            await sendSubscriptionConfirmation(formData, subscriptionToken);
         }
-        /* Loading animation */
-        .loading-animation {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 1000;
-            backdrop-filter: blur(8px);
-            background: rgba(255, 255, 255, 0.8);
+        
+        showSuccessMessage('Successfully subscribed to alerts!', 'subscriptionForm');
+        document.getElementById('subscriptionForm').reset();
+        return true;
+        
+    } catch (error) {
+        console.error('Error in handleSubscription:', error);
+        showErrorMessage(error.message || 'Failed to save subscription. Please try again.', 'subscriptionErrorMessages');
+        throw error;
+    }
+}
+
+async function sendSubscriptionConfirmation(formData, token) {
+    const templateParams = {
+        to_email: formData.email,
+        subscription_token: token,
+        unsubscribe_url: `${window.location.origin}/unsubscribe?token=${token}`
+    };
+    
+    try {
+        await emailjs.send(
+            'service_yu7vixc',
+            'template_hl5u3da',
+            templateParams,
+            'jvRz2wFY1kqzz5Cmy'
+        );
+    } catch (error) {
+        console.error('Error sending subscription confirmation:', error);
+        throw error;
+    }
+}
+
+function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+async function testAndInitializeDatabase() {
+    try {
+        const result = await testDatabaseConnection();
+        if (!result) {
+            throw new Error('Database initialization failed');
         }
-        .pulse {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: var(--secondary-color);
-            animation: pulse 1.5s ease-in-out infinite;
+        console.log('Database initialized successfully');
+        dbInitialized = true;
+        
+        return true;
+    } catch (error) {
+        console.error('Database initialization error:', error);
+        const errorMessages = document.getElementById('errorMessages');
+        if (errorMessages) {
+            errorMessages.innerHTML = `
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <strong>Database Error:</strong> Unable to initialize database. Please try again later.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
         }
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-            100% { transform: scale(1); }
+        return false;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        console.log('Initializing services...');
+        
+        // Initialize database first
+        const dbStatus = await testDatabaseConnection();
+        if (!dbStatus) {
+            throw new Error('Database initialization failed');
         }
-        /* Center and standardize tab navigation */
-        .nav-tabs {
-            display: flex;
-            justify-content: center;
-            width: 100%;
-            margin-bottom: 2rem;
+        
+        // Initialize email service
+        await initializeEmailJS();
+        
+        // Start monitoring services
+        monitorDatabaseHealth();
+        monitorEmailHealth();
+        
+        console.log('All services initialized successfully');
+    } catch (error) {
+        console.error('Service initialization error:', error);
+        const errorMessages = document.getElementById('errorMessages');
+        if (errorMessages) {
+            errorMessages.innerHTML = `
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <strong>Warning:</strong> Some services may be unavailable. Please try again later.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
         }
-        .nav-item {
-            flex: 1;
-            text-align: center;
-            max-width: 200px;
+    }
+    
+    document.getElementsByClassName("tablinks")[0]?.click();
+});
+
+function showSuccessMessage(message, formId) {
+    const form = document.getElementById(formId);
+    const successAlert = document.createElement('div');
+    successAlert.className = 'alert alert-success alert-dismissible fade show mt-3';
+    successAlert.innerHTML = `
+        <strong>Success!</strong> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    form.after(successAlert);
+    
+    setTimeout(() => {
+        successAlert.remove();
+    }, 5000);
+}
+
+function showErrorMessage(message, elementId) {
+    const errorDiv = document.getElementById(elementId);
+    if (errorDiv) {
+        errorDiv.innerHTML = `
+            <strong>Error:</strong> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        errorDiv.style.display = 'block';
+        
+        setTimeout(() => {
+            errorDiv.style.display = 'none';
+        }, 5000);
+    }
+}
+
+function createFloatingPaws() {
+    const pawBackground = document.getElementById('pawBackground');
+    const pawSymbols = ['🐾', '🐱', '🐶'];
+    
+    setInterval(() => {
+        const paw = document.createElement('span');
+        paw.className = 'paw';
+        paw.textContent = pawSymbols[Math.floor(Math.random() * pawSymbols.length)];
+        paw.style.left = Math.random() * 100 + 'vw';
+        paw.style.animationDuration = (Math.random() * 3 + 5) + 's';
+        pawBackground.appendChild(paw);
+        
+        setTimeout(() => {
+            pawBackground.removeChild(paw);
+        }, 8000);
+    }, 2000);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    createFloatingPaws();
+});
+
+function openTab(evt, tabName) {
+    let tabcontent = document.getElementsByClassName("tabcontent");
+    for (let i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";  
+    }
+    
+    let tablinks = document.getElementsByClassName("tablinks");
+    for (let i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+    
+    document.getElementById(tabName).style.display = "block";  
+    evt.currentTarget.className += " active";
+}
+
+async function shareOnSocial(platform) {
+    const url = encodeURIComponent(window.location.href);
+    const donateUrl = encodeURIComponent('https://www.paypal.com/paypalme/PetAlertPortal');
+    const text = encodeURIComponent("Help us protect and rescue animals in need through the Pet Alert Portal! Donate here: " + donateUrl);
+    
+    let shareUrl = '';
+    if (platform === 'facebook') {
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`;
+    } else if (platform === 'twitter') {
+        shareUrl = `https://twitter.com/intent/tweet?url=${url}&text=${text}`;
+    }
+    
+    window.open(shareUrl, '_blank', 'width=600,height=400');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementsByClassName("tablinks")[0].click();
+});
+
+const subscriptionForm = document.getElementById('subscriptionForm');
+if (subscriptionForm) {
+    subscriptionForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = {
+            email: document.getElementById('subscriberEmail').value,
+            phone: document.getElementById('subscriberPhone').value,
+            emailAlerts: document.getElementById('emailAlerts').checked,
+            smsAlerts: document.getElementById('smsAlerts').checked
+        };
+
+        if (!formData.emailAlerts && !formData.smsAlerts) {
+            showErrorMessage('Please select at least one type of alert (Email or SMS)', 'subscriptionErrorMessages');
+            return;
         }
-        /* Center and standardize form sections */
-        .tab-pane {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+
+        if (formData.emailAlerts && !formData.email) {
+            showErrorMessage('Email address is required for email alerts', 'subscriptionErrorMessages');
+            return;
         }
-        .mb-3 {
-            width: 100%;
-            max-width: 800px;
-            margin: var(--spacing-lg) auto;
+
+        if (formData.smsAlerts && !formData.phone) {
+            showErrorMessage('Phone number is required for SMS alerts', 'subscriptionErrorMessages');
+            return;
         }
-        /* Center map and standardize its container */
-        #map {
-            width: 100%;
-            max-width: 800px;
-            margin: 0 auto 2rem auto;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            height: 400px;
+
+        try {
+            await handleSubscription(formData);
+        } catch (error) {
+            console.error('Subscription error:', error);
+            showErrorMessage('Failed to process subscription. Please try again.', 'subscriptionErrorMessages');
         }
-        /* Center and standardize social buttons */
-        .social-buttons {
-            text-align: center;
-            max-width: 800px;
-            margin: 2rem auto;
-        }
-        .social-buttons .d-flex {
-            gap: 1rem;
-            justify-content: center;
-        }
-        .social-btn {
-            min-width: 200px;
-        }
-    </style>
-    <!-- EmailJS Script -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.4.0/purify.min.js"></script>
-    <script type="text/javascript">
-        (function() {
-            if (typeof emailjs !== 'undefined') {
-                emailjs.init("YOUR_PUBLIC_KEY");
-            } else {
-                console.error('EmailJS failed to load');
-            }
-        })();
-    </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol@0.79.0/dist/L.Control.Locate.min.js" charset="utf-8"></script>
+    });
+}
+</script>
+
+<style>
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    background-color: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+}
+
+.tab {
+    overflow: hidden;
+    background-color: #f1f1f1;
+    border-radius: 10px;
+}
+
+.tab button {
+    background-color: inherit;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+}
+
+.tab button:hover {
+    background-color: #ddd;
+}
+
+.tab button.active {
+    background-color: #ccc;
+}
+
+.tabcontent {
+    display: none;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+}
+
+.hero-section {
+    background: linear-gradient(135deg, #e8f4f8, #d1e8f0);
+    padding: 60px 0;
+    margin-bottom: 40px;
+    border-radius: 20px;
+    box-shadow: 0 8px 25px rgba(52, 152, 219, 0.15);
+}
+
+.hero-section svg {
+    width: 120px;
+    height: 120px;
+    margin-bottom: 25px;
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes pawFloat {
+    0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+    50% { opacity: 0.1; }
+    100% { transform: translate(100px, -100px) rotate(20deg); opacity: 0; }
+}
+
+.paw-background {
+    overflow: hidden;
+}
+
+.paw {
+    color: #3498db;
+    opacity: 0.05;
+    position: absolute;
+    animation: pawFloat 8s infinite linear;
+}
+
+.app-title {
+    color: #2c3e50;
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 30px;
+    font-size: 2.5em;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+.description {
+    text-align: center;
+    color: #34495e;
+    font-size: 1.2em;
+    margin-bottom: 30px;
+    font-weight: 500;
+}
+
+.form-label {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.form-control, .form-select {
+    border-radius: 12px;
+    border: 2px solid #e8f4f8;
+    padding: 12px;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 15px rgba(52, 152, 219, 0.2);
+    transform: translateY(-2px);
+}
+
+.btn {
+    border-radius: 12px;
+    padding: 12px 25px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, #3498db, #2980b9);
+    border: none;
+}
+
+.btn-success {
+    background: linear-gradient(45deg, #2ecc71, #27ae60);
+    border: none;
+}
+
+.loading-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255,255,255,0.8);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.loading-overlay.active {
+    display: flex;
+}
+
+.status-indicator {
+    background: linear-gradient(145deg, #ffffff, #f8f9fa);
+    border-radius: 15px;
+    padding: 20px;
+    margin: 25px 0;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+.pet-counter {
+    background: linear-gradient(45deg, #3498db, #2ecc71);
+    border-radius: 20px;
+    padding: 30px;
+    color: white;
+    text-align: center;
+    margin: 30px 0;
+    box-shadow: 0 10px 20px rgba(52, 152, 219, 0.2);
+}
+
+.counter-number {
+    font-size: 3.5em;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.success-stories {
+    background: linear-gradient(to right, #fff, #f8f9fa);
+    padding: 20px;
+    border-radius: 15px;
+    margin: 20px 0;
+}
+
+.story-card {
+    background: linear-gradient(145deg, #ffffff, #f8f9fa);
+    border-radius: 15px;
+    padding: 25px;
+    margin: 15px 0;
+    border-left: 5px solid #3498db;
+    transition: all 0.3s ease;
+}
+
+.story-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.volunteer-section {
+    background: linear-gradient(135deg, #f0f9ff, #e1f2fa);
+    border-radius: 20px;
+    padding: 40px;
+    margin-top: 50px;
+    box-shadow: 0 8px 25px rgba(52, 152, 219, 0.15);
+}
+
+.donation-section {
+    background: linear-gradient(135deg, #fff5f5, #fff0f0);
+    border-radius: 20px;
+    padding: 40px;
+    margin: 40px 0;
+    box-shadow: 0 8px 25px rgba(52, 152, 219, 0.15);
+}
+
+.qr-code img {
+    border-radius: 15px;
+    padding: 10px;
+    background: white;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.qr-code img:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+hr {
+    border: 0;
+    height: 2px;
+    background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(52, 152, 219, 0.75), rgba(0, 0, 0, 0));
+    margin: 40px 0;
+}
+
+.donation-btn {
+    transition: all 0.3s ease;
+    margin: 10px;
+    width: 180px;
+}
+
+.donation-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.share-buttons button {
+    width: 180px;
+    margin: 5px;
+    transition: all 0.3s ease;
+}
+
+.share-buttons button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.btn-info {
+    background-color: #1DA1F2;
+    color: white;
+}
+
+.btn-info:hover {
+    background-color: #1991db;
+    color: white;
+}
+
+.form-check {
+    margin-top: 1rem;
+}
+
+.form-check-input:checked {
+    background-color: #2ecc71;
+    border-color: #2ecc71;
+}
+</style>
 </head>
 <body>
-    <a href="#main-content" class="skip-link">Skip to main content</a>
-    <div id="successMessage" role="alert" aria-live="polite" class="alert alert-success d-none" role="alert">
-        <strong>Success!</strong> Your report has been submitted successfully.
+<div class="container">
+    <div class="paw-background" id="pawBackground"></div>
+
+    <div class="hero-section">
+        <svg class="hero-image" viewBox="0 0 512 512">
+            <path fill="#3498db" d="M256 224c-79.41 0-192 122.76-192 200.25 0 34.9 26.81 55.75 71.74 55.75 48.84 0 81.09-25.08 120.26-25.08 39.51 0 71.85 25.08 120.26 25.08 44.93 0 71.74-20.85 71.74-55.75C448 346.76 335.41 224 256 224zm-147.28-12.61c-10.4-34.65-42.44-57.09-71.56-50.13-29.12 6.96-44.29 40.69-33.89 75.34 10.4 34.65 42.44 57.09 71.56 50.13 29.12-6.96 44.29-40.69 33.89-75.34zm84.72-20.78c30.94-8.14 46.42-49.94 34.58-93.36s-46.52-72.01-77.46-63.87-46.42 49.94-34.58 93.36c11.84 43.42 46.53 72.02 77.46 63.87zm281.39-29.34c-29.12-6.96-61.15 15.48-71.56 50.13-10.4 34.65 4.77 68.38 33.89 75.34 29.12 6.96 61.15-15.48 71.56-50.13 10.4-34.65-4.77-68.38-33.89-75.34zm-156.27 29.34c30.94 8.14 65.62-20.45 77.46-63.87 11.84-43.42-3.64-85.21-34.58-93.36s-65.62 20.45-77.46 63.87c-11.84 43.42 3.64 85.22 34.58 93.36z"/>
+        </svg>
+        <h1 class="app-title" style="color: #3498db;">Pet Alert Portal</h1>
+        <p class="description">Every animal deserves love, care, and safety. Together, we can make a difference!</p>
     </div>
-    <div id="errorMessage" class="alert alert-danger d-none" role="alert">
-        <strong>Error!</strong> There was a problem submitting your report. Please try again.
+
+    <div class="pet-counter">
+        <h3>Lives Impacted</h3>
+        <div class="counter-number" id="rescueCounter">0</div>
+        <p>Animals helped through our community</p>
     </div>
-    <div class="emergency-banner" id="emergencyBanner">
-        <div class="emergency-content">
-            <h3>Emergency Animal Response</h3>
-            <p>24/7 Emergency Hotline: <a href="tel:1-800-XXX-XXXX">1-800-XXX-XXXX</a></p>
-            <button class="btn btn-danger">Report Emergency Now</button>
+
+    <div class="success-stories">
+        <h3 class="text-center mb-4">Recent Success Stories</h3>
+        <div class="row" id="successStories">
+            <!-- Stories will be populated dynamically -->
         </div>
     </div>
-    <div class="container" id="main-content">
-        <div class="hero-section">
-            <h2 class="mb-4">Pet Alert Portal Report</h2>
-            <p>Join us in rescuing pets in need. Your efforts can make a difference!</p>
-        </div>
-        <div class="loading-animation d-none" id="loadingAnimation">
-            <div class="pulse"></div>
-        </div>
+
+    <h1 class="app-title">Pet Alert Portal</h1>
+    <p class="description">Help us protect and rescue animals in need. Your report can make a difference in saving a life and ensuring the safety of vulnerable animals in our community.</p>
+
+    <div class="status-indicator" id="systemStatus">
+        <div id="databaseStatus">Database: Checking...</div>
+        <div id="emailStatus">Email Service: Checking...</div>
+    </div>
+
+    <div class="tab">
+        <button class="tablinks" onclick="openTab(event, 'ReportTab')">Report an Animal</button>
+        <button class="tablinks" onclick="openTab(event, 'VolunteerTab')">Volunteer</button>
+        <button class="tablinks" onclick="openTab(event, 'SubscriptionTab')">Subscribe to Alerts</button>
+    </div>
+
+    <div id="ReportTab" class="tabcontent">
         <form id="reportForm" class="needs-validation" novalidate>
-            <div class="progress-container mb-4">
-                <div class="progress">
-                    <div class="progress-bar progress-indicator" role="progressbar" style="width: 0%"></div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="reporterName" class="form-label">Your Name</label>
+                    <input type="text" class="form-control" id="reporterName" required>
                 </div>
-                <div class="step-indicators d-flex justify-content-between">
-                    <span class="step active">User Info</span>
-                    <span class="step">Animal</span>
-                    <span class="step">Situation</span>
-                    <span class="step">Behavior</span>
-                    <span class="step">Media</span>
-                    <span class="step">Additional</span>
+                <div class="col-md-6">
+                    <label for="reporterContact" class="form-label">Contact Information</label>
+                    <input type="text" class="form-control" id="reporterContact" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="animalType" class="form-label">Animal Type</label>
+                    <select class="form-select" id="animalType" required>
+                        <option value="">Choose...</option>
+                        <optgroup label="Domestic Animals">
+                            <option value="Dog">Dog</option>
+                            <option value="Cat">Cat</option>
+                            <option value="Rabbit">Rabbit</option>
+                            <option value="Bird">Bird (Pet)</option>
+                            <option value="Hamster">Hamster</option>
+                            <option value="Guinea Pig">Guinea Pig</option>
+                            <option value="Ferret">Ferret</option>
+                        </optgroup>
+                        <optgroup label="Wildlife">
+                            <option value="Bird-Wild">Bird (Wild)</option>
+                            <option value="Deer">Deer</option>
+                            <option value="Raccoon">Raccoon</option>
+                            <option value="Fox">Fox</option>
+                            <option value="Squirrel">Squirrel</option>
+                            <option value="Opossum">Opossum</option>
+                        </optgroup>
+                        <optgroup label="Farm Animals">
+                            <option value="Horse">Horse</option>
+                            <option value="Cow">Cow</option>
+                            <option value="Sheep">Sheep</option>
+                            <option value="Goat">Goat</option>
+                            <option value="Pig">Pig</option>
+                            <option value="Chicken">Chicken</option>
+                        </optgroup>
+                        <optgroup label="Other">
+                            <option value="Reptile">Reptile</option>
+                            <option value="Amphibian">Amphibian</option>
+                            <option value="Other">Other (Specify in Description)</option>
+                        </optgroup>
+                    </select>
+                    <div id="animalTypeHelp" class="form-text">Select the most specific type that applies</div>
+                </div>
+                <div class="col-md-6">
+                    <label for="healthStatus" class="form-label">Health Status</label>
+                    <select class="form-select" id="healthStatus" required>
+                        <option value="">Choose...</option>
+                        <option>Critical</option>
+                        <option>Injured</option>
+                        <option>Appears Healthy</option>
+                        <option>Unknown</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label for="behavior" class="form-label">Behavior</label>
+                    <textarea class="form-control" id="behavior" rows="2" required></textarea>
+                </div>
+                <div class="col-12">
+                    <label for="locationDetails" class="form-label">Location Details</label>
+                    <textarea class="form-control" id="locationDetails" rows="2" required></textarea>
+                </div>
+                <div class="col-12">
+                    <label for="description" class="form-label">Additional Description</label>
+                    <textarea class="form-control" id="description" rows="3"></textarea>
+                </div>
+                <div class="col-md-6">
+                    <label for="urgency" class="form-label">Urgency Level</label>
+                    <select class="form-select" id="urgency" required>
+                        <option value="">Choose...</option>
+                        <option>Immediate Response Needed</option>
+                        <option>Urgent</option>
+                        <option>Non-urgent</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="imageUpload" class="form-label">Upload Image</label>
+                    <input type="file" class="form-control" id="imageUpload" accept="image/*">
                 </div>
             </div>
-            <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="user-tab" data-bs-toggle="tab" data-bs-target="#user" type="button" role="tab" aria-controls="user" aria-selected="true">
-                        User Information
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="animal-tab" data-bs-toggle="tab" data-bs-target="#animal" type="button" role="tab" aria-controls="animal" aria-selected="false">
-                        Animal Details
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="situation-tab" data-bs-toggle="tab" data-bs-target="#situation" type="button" role="tab" aria-controls="situation" aria-selected="false">
-                        Situation Details
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="behavior-tab" data-bs-toggle="tab" data-bs-target="#behavior" type="button" role="tab" aria-controls="behavior" aria-selected="false">
-                        Animal Behavior
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="photos-tab" data-bs-toggle="tab" data-bs-target="#photos" type="button" role="tab" aria-controls="photos" aria-selected="false">
-                        Photos & Videos
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="additional-tab" data-bs-toggle="tab" data-bs-target="#additional" type="button" role="tab" aria-controls="additional" aria-selected="false">
-                        Additional Identifiers
-                    </button>
-                </li>
-            </ul>
-            <div class="tab-content form-section" id="myTabContent">
-                <!-- User Information Section -->
-                <div class="tab-pane fade show active" id="user" role="tabpanel" aria-labelledby="user-tab">
-                    <div class="mb-3">
-                        <label for="reporterName" class="form-label">Your Name</label>
-                        <input type="text" id="reporterName" class="form-control" required placeholder="Enter your name" oninput="validateField(this)"/>
-                        <div class="invalid-feedback">Please enter your name.</div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="reporterContact" class="form-label">Contact Information</label>
-                        <input type="text" id="reporterContact" class="form-control" required placeholder="Enter phone number or email" oninput="validateField(this)"/>
-                        <div class="invalid-feedback">Please enter valid contact information.</div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="reporterAddress" class="form-label">Address (Optional)</label>
-                        <input type="text" id="reporterAddress" class="form-control" placeholder="Enter your address"/>
-                    </div>
-                </div>
-                <!-- Animal Details Section -->
-                <div class="tab-pane fade" id="animal" role="tabpanel" aria-labelledby="animal-tab">
-                    <div class="mb-3">
-                        <label for="animalType" class="form-label">Animal Type</label>
-                        <select id="animalType" class="form-select" required oninput="validateField(this)">
-                            <option value="">Select animal type</option>
-                            <option value="dog">Dog</option>
-                            <option value="cat">Cat</option>
-                            <option value="bird">Bird</option>
-                            <option value="reptile">Reptile</option>
-                            <option value="other">Other</option>
-                        </select>
-                        <div class="invalid-feedback">Please select the animal type.</div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="breed" class="form-label">Breed</label>
-                        <input type="text" id="breed" class="form-control" placeholder="Specify breed if known"/>
-                    </div>
-                    <div class="mb-3">
-                        <label for="colorMarkings" class="form-label">Color and Markings</label>
-                        <input type="text" id="colorMarkings" class="form-control" required placeholder="Describe animal colors and unique markings" oninput="validateField(this)"/>
-                        <div class="invalid-feedback">Please describe the animal's color and markings.</div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="size" class="form-label">Size</label>
-                        <select id="size" class="form-select" required oninput="validateField(this)">
-                            <option value="">Select size</option>
-                            <option value="small">Small</option>
-                            <option value="medium">Medium</option>
-                            <option value="large">Large</option>
-                        </select>
-                        <div class="invalid-feedback">Please select the size of the animal.</div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="age" class="form-label">Age</label>
-                        <input type="text" id="age" class="form-control" placeholder="Enter approximate age or category (e.g., young, adult, senior)"/>
-                    </div>
-                    <div class="mb-3">
-                        <label for="gender" class="form-label">Gender</label>
-                        <select id="gender" class="form-select" required oninput="validateField(this)">
-                            <option value="">Select gender</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
-                            <option value="unknown">Unknown</option>
-                        </select>
-                        <div class="invalid-feedback">Please select the gender of the animal.</div>
-                    </div>
-                </div>
-                <!-- Situation Details Section -->
-                <div class="tab-pane fade" id="situation" role="tabpanel" aria-labelledby="situation-tab">
-                    <div id="map"></div>
-                    <div class="mb-3">
-                        <label for="reportType" class="form-label">Type of Report</label>
-                        <select id="reportType" class="form-select" required oninput="validateField(this)">
-                            <option value="">Select report type</option>
-                            <option value="lost-pet">Lost Pet</option>
-                            <option value="found-pet">Found Pet</option>
-                            <option value="injured-animal">Injured Animal</option>
-                            <option value="deceased-animal">Deceased Animal</option>
-                            <option value="stray">Stray Animal</option>
-                        </select>
-                        <div class="invalid-feedback">Please select the report type.</div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="lastSeen" class="form-label">Date and Time</label>
-                        <input type="datetime-local" id="lastSeen" class="form-control" required oninput="validateField(this)"/>
-                        <div class="invalid-feedback">Please provide the date and time.</div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="locationDetails" class="form-label">Location Details</label>
-                        <textarea id="locationDetails" class="form-control" rows="3" placeholder="Enter street address or landmarks"></textarea>
-                    </div>
-                </div>
-                <!-- Animal Behavior Section -->
-                <div class="tab-pane fade" id="behavior" role="tabpanel" aria-labelledby="behavior-tab">
-                    <div class="mb-3">
-                        <label for="temperament" class="form-label">Temperament</label>
-                        <select id="temperament" class="form-select" required oninput="validateField(this)">
-                            <option value="">Select temperament</option>
-                            <option value="friendly">Friendly</option>
-                            <option value="shy">Shy</option>
-                            <option value="aggressive">Aggressive</option>
-                            <option value="fearful">Fearful</option>
-                        </select>
-                        <div class="invalid-feedback">Please select the temperament.</div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="approachability" class="form-label">Approachability</label>
-                        <select id="approachability" class="form-select" required oninput="validateField(this)">
-                            <option value="">Select approachability</option>
-                            <option value="yes">Yes</option>
-                            <option value="no">No</option>
-                            <option value="caution">With Caution</option>
-                        </select>
-                        <div class="invalid-feedback">Please select the approachability level.</div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="condition" class="form-label">Condition</label>
-                        <select id="condition" class="form-select" required oninput="validateField(this)">
-                            <option value="">Select condition</option>
-                            <option value="healthy">Healthy</option>
-                            <option value="injured">Injured</option>
-                            <option value="malnourished">Malnourished</option>
-                            <option value="dehydrated">Dehydrated</option>
-                        </select>
-                        <div class="invalid-feedback">Please select the condition of the animal.</div>
-                    </div>
-                </div>
-                <!-- Photos & Videos Section -->
-                <div class="tab-pane fade" id="photos" role="tabpanel" aria-labelledby="photos-tab">
-                    <div class="mb-3">
-                        <label for="photoUpload" class="form-label">Photo Upload</label>
-                        <input type="file" id="photoUpload" class="form-control" accept="image/*" multiple/>
-                    </div>
-                    <div class="mb-3">
-                        <label for="videoUpload" class="form-label">Video Upload</label>
-                        <input type="file" id="videoUpload" class="form-control" accept="video/*"/>
-                    </div>
-                    <div class="mb-3">
-                        <label for="photoNotes" class="form-label">Notes on Photos</label>
-                        <textarea id="photoNotes" class="form-control" rows="3" placeholder="Add descriptions for the uploaded photos"></textarea>
-                    </div>
-                </div>
-                <!-- Additional Identifiers Section -->
-                <div class="tab-pane fade" id="additional" role="tabpanel" aria-labelledby="additional-tab">
-                    <div class="mb-3">
-                        <label for="distinctiveTraits" class="form-label">Distinctive Traits</label>
-                        <input type="text" id="distinctiveTraits" class="form-control" placeholder="Describe any distinctive traits"/>
-                    </div>
-                    <div class="mb-3">
-                        <label for="voiceType" class="form-label">Voice/Bark Type</label>
-                        <input type="text" id="voiceType" class="form-control" placeholder="Describe the voice or bark type"/>
-                    </div>
-                    <div class="mb-3">
-                        <label for="tattooId" class="form-label">Tattoo or Other IDs</label>
-                        <input type="text" id="tattooId" class="form-control" placeholder="Enter any tattoo or other IDs"/>
-                    </div>
-                </div>
-                <button aria-label="Submit report" type="submit" class="btn btn-primary w-100 btn-custom" id="submitReportButton" style="margin-top: 20px;" onclick="showLoadingState(this)">Submit Report Now</button>
+
+            <div class="d-grid gap-2 col-md-6 mx-auto mt-4">
+                <button type="submit" class="btn btn-primary" id="submitReportButton">Submit Report</button>
             </div>
         </form>
-        <div class="social-buttons">
-            <h4 class="mb-3">Help Spread the Word</h4>
-            <div class="d-flex flex-wrap justify-content-center">
-                <a href="https://www.facebook.com/sharer/sharer.php?u=https://www.facebook.com/profile.php?id=61567462995078" 
-                   target="_blank" 
-                   class="btn social-btn facebook-btn">
-                    Share on Facebook
-                </a>
-                <a href="https://twitter.com/intent/tweet?text=Help%20find%20lost%20pets%20and%20rescue%20animals%20in%20need.%20Report%20sightings%20at%20YOUR_URL_HERE" 
-                   target="_blank" 
-                   class="btn social-btn twitter-btn">
-                    Share on X
-                </a>
-                <a href="https://www.facebook.com/fund/YOUR_FUNDRAISER_ID/" 
-                   target="_blank" 
-                   class="btn social-btn donate-btn">
-                    Donate on Facebook
-                </a>
-            </div>
-            <div class="mt-3">
-                <small class="text-muted">Every share helps more animals find their way home!</small>
-            </div>
-        </div>
+
+        <div id="errorMessages" class="alert alert-danger mt-3" style="display: none;"></div>
     </div>
-    <div class="impact-dashboard">
-        <div class="stat-card">
-            <h4>Animals Saved</h4>
-            <div class="stat-number" id="savedCount">0</div>
-            <div class="trend positive">↑ 15% this week</div>
-        </div>
-        <div class="stat-card">
-            <h4>Active Reports</h4>
-            <div class="stat-number" id="activeCount">0</div>
-            <div class="trend neutral">← Stable</div>
-        </div>
-        <div class="stat-card">
-            <h4>Response Time</h4>
-            <div class="stat-number" id="responseTime">0min</div>
-            <div class="trend positive">↑ Improving</div>
-        </div>
-    </div>
-    <div class="emergency-services">
-        <h4>Emergency Contacts</h4>
-        <a href="tel:555-0123" class="emergency-contact"><i class="fas fa-phone-alt"></i> Animal Control</a>
-        <a href="tel:555-0124" class="emergency-contact"><i class="fas fa-phone-alt"></i> Emergency Vet</a>
-        <a href="tel:555-0125" class="emergency-contact"><i class="fas fa-phone-alt"></i> Wildlife Rescue</a>
-    </div>
-    <!-- Bootstrap Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-    const debounce = (func, wait) => {
-        let timeout;
-        return function executedFunction(...args) {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), wait);
-        };
-    };
 
-    function sanitizeInput(input) {
-        return DOMPurify.sanitize(input);
-    }
-
-    function showLoadingState(element) {
-        element.classList.add('loading');
-        element.innerHTML = `<div class="spinner-border spinner-border-sm" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div> ${element.innerHTML}`;
-    }
-
-    function validateField(field) {
-        const value = field.value.trim();
-        const isValid = field.checkValidity();
-        field.classList.toggle('is-valid', isValid);
-        field.classList.toggle('is-invalid', !isValid);
-        return isValid;
-    }
-
-    function enhancedValidation(field) {
-        const value = field.value.trim();
-        const type = field.getAttribute('type');
-        
-        if (type === 'tel') {
-            return /^[\d\s\-\+\(\)]{10,}$/.test(value);
-        }
-        if (type === 'email') {
-            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-        }
-        return value.length > 0;
-    }
-
-    function enhancedValidation() {
-        const fields = document.querySelectorAll('.form-control, .form-select');
-        fields.forEach(field => {
-            field.addEventListener('input', debounce(async (e) => {
-                const isValid = await validateField(field);
-                updateFieldStatus(field, isValid);
-                updateFormProgress();
-            }, 300));
-        });
-    }
-
-    function cacheFormData() {
-        const formData = new FormData(document.getElementById('reportForm'));
-        localStorage.setItem('reportFormCache', JSON.stringify(Object.fromEntries(formData)));
-    }
-
-    function getCurrentLocation() {
-        if ("geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition((position) => {
-                const {latitude, longitude} = position.coords;
-                updateMap(latitude, longitude);
-            });
-        }
-    }
-
-    function enableLocationTracking() {
-        if ("geolocation" in navigator) {
-            navigator.geolocation.watchPosition(
-                position => {
-                    updateMapLocation(position.coords);
-                    updateNearbyServices(position.coords);
-                },
-                error => console.error(error),
-                { enableHighAccuracy: true }
-            );
-        }
-    }
-
-    window.addEventListener('load', () => {
-        const cached = localStorage.getItem('reportFormCache');
-        if (cached) {
-            const restore = confirm('Would you like to restore your previous form data?');
-            if (restore) {
-                const data = JSON.parse(cached);
-                Object.entries(data).forEach(([key, value]) => {
-                    const field = document.getElementById(key);
-                    if (field) field.value = value;
-                });
-            }
-        }
-
-        enhancedValidation();
-        enableLocationTracking();
-    });
-
-    setInterval(cacheFormData, 30000);
-
-    function updateProgress() {
-        const fields = document.querySelectorAll('[required]');
-        const filledFields = Array.from(fields).filter(field => field.value.length > 0);
-        return (filledFields.length / fields.length) * 100;
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-            initForm();
-
-            function initForm() {
-                initSmoothTabTransitions(); 
-                initImageUpload();
-                initMap();
-            }
-
-            function initSmoothTabTransitions() {
-                const tabButtons = document.querySelectorAll('[data-bs-toggle="tab"]');
-                const steps = document.querySelectorAll('.step');
-
-                tabButtons.forEach((button, index) => {
-                    button.addEventListener('click', function() {
-                        steps.forEach((step, i) => {
-                            step.classList.toggle('active', i === index);
-                        });
-                        const progressBar = document.querySelector('.progress-indicator');
-                        const progress = ((index + 1) / tabButtons.length) * 100;
-                        progressBar.style.width = `${progress}%`;
-                        const targetTab = document.querySelector(this.getAttribute('data-bs-target'));
-                        document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('show', 'active'));
-                        targetTab.classList.add('show', 'active');
-                    });
-                });
-            }
-
-            function validateForm() {
-                const form = document.getElementById('reportForm');
-                const requiredFields = form.querySelectorAll('[required]');
-                let isValid = true;
-
-                requiredFields.forEach(field => {
-                    if (!validateField(field)) {
-                        isValid = false;
-                    }
-                });
-
-                return isValid;
-            }
-
-            document.getElementById('reportForm').addEventListener('submit', async function(e) {
-                e.preventDefault();
-                if (!validateForm()) {
-                    return;
-                }
-
-                loadingAnimation.classList.remove('d-none');
-                const formData = new FormData(this);
-                try {
-                    loadingAnimation.classList.remove('d-none');
-                    const formData = new FormData(this);
-                    if (!emailjs) {
-                        throw new Error('EmailJS not initialized');
-                    }
-
-                    await emailjs.send(
-                        'YOUR_SERVICE_ID',
-                        'YOUR_TEMPLATE_ID',
-                        Object.fromEntries(formData),
-                        'YOUR_PUBLIC_KEY'
-                    );
-
-                    successMessage.classList.remove('d-none');
-                    this.reset();
-                } catch (error) {
-                    handleError(error);
-                } finally {
-                    loadingAnimation.classList.add('d-none');
-                }
-            });
-
-            function handleError(error) {
-                const errorMessage = document.getElementById('errorMessage');
-                errorMessage.innerHTML = `
-                    <div class="error-content">
-                        <h4>Error Occurred</h4>
-                        <p>${error.message}</p>
-                        <button onclick="retrySubmission()">Retry</button>
+    <div id="VolunteerTab" class="tabcontent">
+        <div class="volunteer-section">
+            <h2 class="text-center mb-4">Volunteer With Us</h2>
+            <p class="text-center mb-4">Join our network of compassionate volunteers dedicated to helping animals in need. Your time and skills can make a real difference!</p>
+            
+            <form id="volunteerForm" class="needs-validation" novalidate>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="volunteerName" class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="volunteerName" required>
                     </div>
-                `;
-                errorMessage.classList.remove('d-none');
-            }
+                    <div class="col-md-6">
+                        <label for="volunteerEmail" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="volunteerEmail" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="volunteerPhone" class="form-label">Phone Number</label>
+                        <input type="tel" class="form-control" id="volunteerPhone">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="availability" class="form-label">Availability</label>
+                        <select class="form-select" id="availability" required>
+                            <option value="">Choose...</option>
+                            <option value="Weekdays">Weekdays</option>
+                            <option value="Weekends">Weekends</option>
+                            <option value="Both">Both Weekdays and Weekends</option>
+                            <option value="Flexible">Flexible Schedule</option>
+                            <option value="Emergency">Emergency Response Only</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label for="skills" class="form-label">Relevant Skills or Certifications</label>
+                        <textarea class="form-control" id="skills" rows="2" placeholder="e.g., Veterinary experience, animal handling, first aid certification"></textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="experienceLevel" class="form-label">Experience Level</label>
+                        <select class="form-select" id="experienceLevel" required>
+                            <option value="">Choose...</option>
+                            <option value="Beginner">Beginner - Eager to Learn</option>
+                            <option value="Intermediate">Intermediate - Some Experience</option>
+                            <option value="Advanced">Advanced - Experienced Handler</option>
+                            <option value="Professional">Professional - Certified/Licensed</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="preferredAnimals" class="form-label">Preferred Animals (Multiple Selection)</label>
+                        <select class="form-select" id="preferredAnimals" multiple required>
+                            <option value="Dogs">Dogs</option>
+                            <option value="Cats">Cats</option>
+                            <option value="Birds">Birds</option>
+                            <option value="Wildlife">Wildlife</option>
+                            <option value="Farm Animals">Farm Animals</option>
+                            <option value="Reptiles">Reptiles</option>
+                            <option value="Any">Any Animals</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="transportation">
+                            <label class="form-check-label" for="transportation">
+                                I have reliable transportation and am willing to travel for rescues
+                            </label>
+                        </div>
+                    </div>
+                </div>
 
-            function initMap() {
-                const mapElement = document.getElementById('map');
-                if (!mapElement) return;
+                <div class="d-grid gap-2 col-md-6 mx-auto mt-4">
+                    <button type="submit" class="btn btn-success">Submit Volunteer Application</button>
+                </div>
+            </form>
 
-                mapElement.style.height = '400px';
-                mapElement.style.marginBottom = '20px';
-                mapElement.style.borderRadius = '12px';
-                mapElement.style.border = '1px solid var(--border-color)';
+            <div id="volunteerErrorMessages" class="alert alert-danger mt-3" style="display: none;"></div>
+        </div>
+    </div>
 
-                const map = L.map('map', {
-                    zoomControl: true,
-                    doubleClickZoom: true,
-                    scrollWheelZoom: true
-                }).setView([51.505, -0.09], 13);
+    <div id="SubscriptionTab" class="tabcontent">
+        <div class="notification-preferences-section">
+            <h2 class="text-center mb-4">Stay Informed - Subscribe to Alerts</h2>
+            <p class="text-center mb-4">Receive immediate notifications about animals in need in your area.</p>
+            
+            <form id="subscriptionForm" class="needs-validation" novalidate>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="subscriberEmail" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="subscriberEmail">
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="emailAlerts">
+                            <label class="form-check-label" for="emailAlerts">
+                                Receive Email Alerts
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="subscriberPhone" class="form-label">Phone Number</label>
+                        <input type="tel" class="form-control" id="subscriberPhone">
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="smsAlerts">
+                            <label class="form-check-label" for="smsAlerts">
+                                Receive SMS Alerts
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> You can customize your alert preferences and unsubscribe at any time.
+                        </div>
+                    </div>
+                    <div class="d-grid gap-2 col-md-6 mx-auto">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-bell"></i> Subscribe to Alerts
+                        </button>
+                    </div>
+                </div>
+            </form>
+            <div id="subscriptionErrorMessages" class="alert alert-danger mt-3" style="display: none;"></div>
+        </div>
+    </div>
 
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-                
-                const locateControl = L.control.locate({
-                    position: 'topleft',
-                    drawCircle: true,
-                    follow: true,
-                    setView: true,
-                    keepCurrentZoomLevel: true,
-                    markerStyle: {
-                        weight: 1,
-                        opacity: 0.8,
-                        fillOpacity: 0.8
-                    },
-                    circleStyle: {
-                        weight: 1,
-                        clickable: false
-                    },
-                    icon: 'fa fa-location-arrow',
-                    metric: true,
-                    strings: {
-                        title: "Show me where I am",
-                        popup: "You are within {distance} {unit} from this point",
-                        outsideMapBoundsMsg: "You seem to be outside the map bounds"
-                    },
-                    locateOptions: {
-                        maxZoom: 18,
-                        watch: true,
-                        enableHighAccuracy: true
-                    }
-                }).addTo(map);
+    <div class="row align-items-center justify-content-center mt-4 mb-4">
+        <div class="col-md-4 text-center">
+            <button class="btn btn-lg btn-success donation-btn" onclick="window.open('https://www.paypal.com/paypalme/PetAlertPortal', '_blank')">
+                <i class="fas fa-heart"></i> Donate Now
+            </button>
+        </div>
+        
+        <div class="col-md-4 text-center">
+            <div class="qr-code">
+                <img src="PAYPAL QR CODE.png" alt="PayPal QR Code for donations to Pet Alert Portal" width="200" height="200">
+                <p class="mt-2"><strong>Scan to Donate</strong></p>
+            </div>
+        </div>
+        
+        <div class="col-md-4 text-center">
+            <div class="share-buttons">
+                <button class="btn btn-lg btn-primary mb-2" onclick="shareOnSocial('facebook')">
+                    <i class="fab fa-facebook"></i> Share on Facebook
+                </button>
+                <button class="btn btn-lg btn-info mb-2" onclick="shareOnSocial('twitter')">
+                    <i class="fab fa-twitter"></i> Share on Twitter
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
-                setTimeout(() => {
-                    locateControl.start();
-                }, 1000);
-            }
+<div class="loading-overlay">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
 
-            function addMapMarker(lat, lng, type) {
-                const icon = L.divIcon({
-                    className: `marker-icon ${type}`,
-                    html: `<div class="marker-pulse"></div>`,
-                    iconSize: [30, 30]
-                });
-                return L.marker([lat, lng], {icon}).addTo(map);
-            }
+<script>
+async function shareOnSocial(platform) {
+    const url = encodeURIComponent(window.location.href);
+    const donateUrl = encodeURIComponent('https://www.paypal.com/paypalme/PetAlertPortal');
+    const text = encodeURIComponent("Help us protect and rescue animals in need through the Pet Alert Portal! Donate here: " + donateUrl);
+    
+    let shareUrl = '';
+    if (platform === 'facebook') {
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`;
+    } else if (platform === 'twitter') {
+        shareUrl = `https://twitter.com/intent/tweet?url=${url}&text=${text}`;
+    }
+    
+    window.open(shareUrl, '_blank', 'width=600,height=400');
+}
 
-            function initImageUpload() {
-                const photoUpload = document.getElementById('photoUpload');
-                if (!photoUpload) return;
-
-                photoUpload.addEventListener('change', function(e) {
-                    const files = e.target.files;
-                    if (!files.length) return;
-
-                    Array.from(files).forEach(file => {
-                        if (file.size > 5000000) {
-                            alert('File too large. Please select an image under 5MB.');
-                            photoUpload.value = '';
-                            return;
-                        }
-                        if (!file.type.startsWith('image/')) {
-                            alert('Please select only image files.');
-                            photoUpload.value = '';
-                            return;
-                        }
-                        optimizeImageUpload(file).then(blob => {
-                            // Handle the optimized image blob as needed
-                        });
-                    });
-                });
-            }
-        });
-    </script>
-</body>
-</html>
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementsByClassName("tablinks")[0].click();
+});
+</script>
+</body></html>
