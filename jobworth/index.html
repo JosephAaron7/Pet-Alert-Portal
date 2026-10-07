@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090c0f">
+<title>JobWorth</title>
+<style>
+:root{--bg:#090c0f;--card:#12171c;--line:#27313a;--text:#f6f8fa;--muted:#93a0ab;--green:#8cf0ac;--yellow:#ffd166;--red:#ff7f7f}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(#0d1217,#090c0f);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+main{max-width:560px;margin:auto;padding:calc(env(safe-area-inset-top) + 18px) 16px calc(env(safe-area-inset-bottom) + 34px)}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.brand{font-size:24px;font-weight:900}.brand span{color:var(--green)}
+h1{font-size:38px;line-height:1.03;letter-spacing:-1.5px;margin:10px 0 8px}.sub{color:var(--muted);line-height:1.5;margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px;margin:14px 0;box-shadow:0 20px 60px rgba(0,0,0,.22)}
+.title{font-size:15px;font-weight:800;margin-bottom:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}
+label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin:0 0 7px 3px}.wrap{position:relative}.prefix,.suffix{position:absolute;top:50%;transform:translateY(-50%);color:#7e8994;font-weight:800;pointer-events:none}.prefix{left:14px}.suffix{right:13px;font-size:12px}
+input{width:100%;height:54px;border:1px solid #2d3741;border-radius:15px;background:#0d1216;color:white;font-size:18px;font-weight:800;padding:0 14px;outline:none}input.money{padding-left:30px}input.right{padding-right:40px}
+button{font:inherit}.primary{width:100%;height:60px;border:0;border-radius:17px;background:var(--green);color:#071109;font-size:17px;font-weight:900;margin-top:16px}.secondary{width:100%;height:48px;border:1px solid #303a44;border-radius:15px;background:transparent;color:#c5cdd4;font-weight:750;margin-top:10px}
+.settingsBtn{width:44px;height:44px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:#fff;font-size:18px}.settings{display:none}.settings.show{display:block}
+.alert{display:none;background:rgba(255,127,127,.09);border:1px solid rgba(255,127,127,.25);color:#ffc6c6;border-radius:14px;padding:12px;margin-top:12px;font-size:13px}
+.result{display:none}.result.show{display:block}.row{display:flex;justify-content:space-between;align-items:center}.badge{padding:8px 11px;border-radius:99px;font-size:12px;font-weight:900;letter-spacing:.4px}.good{color:var(--green);background:rgba(140,240,172,.12)}.warn{color:var(--yellow);background:rgba(255,209,102,.12)}.bad{color:var(--red);background:rgba(255,127,127,.12)}
+.profit{font-size:48px;font-weight:950;letter-spacing:-2px;margin:10px 0 2px}.caption{font-size:12px;color:var(--muted)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.stat{background:#0d1216;border:1px solid #232c34;border-radius:16px;padding:13px}.stat small{display:block;color:var(--muted);margin-bottom:5px}.stat strong{font-size:18px}
+.recommend{margin-top:13px;border:1px solid rgba(140,240,172,.24);border-radius:18px;padding:16px;background:rgba(140,240,172,.06)}.recommend small{font-weight:900;color:#9eb0a3}.recommend .price{font-size:31px;font-weight:950;color:var(--green);margin:4px 0}.recommend p{margin:0;color:#b0b8bf;font-size:12px;line-height:1.45}
+.footer{text-align:center;color:#64717c;font-size:10px;line-height:1.5;padding:8px 15px}
+@media(max-width:390px){main{padding-left:13px;padding-right:13px}h1{font-size:33px}}
+</style>
+</head>
+<body>
+<main>
+<header><div class="brand">Job<span>Worth</span></div><button class="settingsBtn" id="settingsBtn">⚙︎</button></header>
+<section><div style="font-size:12px;color:var(--green);font-weight:850;letter-spacing:.7px">FAST JOB PROFITABILITY</div><h1>Know if the job actually pays.</h1><p class="sub">Enter the job value and your real costs. JobWorth tells you what you make, whether it's worth taking, and the price needed to hit your target.</p></section>
+
+<section class="card settings" id="settings">
+<div class="title">Your targets</div><div class="grid">
+<div><label>Target margin</label><div class="wrap"><input id="targetMargin" class="right" inputmode="decimal" value="35"><span class="suffix">%</span></div></div>
+<div><label>Minimum margin</label><div class="wrap"><input id="minMargin" class="right" inputmode="decimal" value="20"><span class="suffix">%</span></div></div>
+<div><label>Hourly value</label><div class="wrap"><span class="prefix">$</span><input id="defaultHourly" class="money" inputmode="decimal" value="40"></div></div>
+<div><label>Mileage / mile</label><div class="wrap"><span class="prefix">$</span><input id="mileRate" class="money" inputmode="decimal" value="0.70"></div></div>
+</div></section>
+
+<section class="card">
+<div class="title">Job numbers</div><div class="grid">
+<div class="full"><label>Job payout / proposed bid</label><div class="wrap"><span class="prefix">$</span><input id="revenue" class="money" inputmode="decimal" placeholder="650"></div></div>
+<div><label>Materials</label><div class="wrap"><span class="prefix">$</span><input id="materials" class="money" inputmode="decimal" placeholder="130"></div></div>
+<div><label>Labor hours</label><input id="hours" inputmode="decimal" placeholder="5"></div>
+<div><label>Your hourly value</label><div class="wrap"><span class="prefix">$</span><input id="hourly" class="money" inputmode="decimal" value="40"></div></div>
+<div><label>Travel miles</label><input id="miles" inputmode="decimal" placeholder="82"></div>
+<div><label>Helper / subcontractor</label><div class="wrap"><span class="prefix">$</span><input id="helper" class="money" inputmode="decimal" placeholder="75"></div></div>
+<div><label>Other costs / fees</label><div class="wrap"><span class="prefix">$</span><input id="other" class="money" inputmode="decimal" placeholder="35"></div></div>
+</div>
+<div class="alert" id="alert"></div>
+<button class="primary" id="calc">Calculate JobWorth</button>
+<button class="secondary" id="demo">Load example job</button>
+</section>
+
+<section class="card result" id="result">
+<div class="row"><div class="title" style="margin:0">Job verdict</div><div class="badge good" id="badge">TAKE IT</div></div>
+<div class="profit" id="profit">$0</div><div class="caption">estimated net profit after entered costs</div>
+<div class="stats">
+<div class="stat"><small>Profit margin</small><strong id="margin">0%</strong></div>
+<div class="stat"><small>ROI on cost</small><strong id="roi">0%</strong></div>
+<div class="stat"><small>Total job cost</small><strong id="cost">$0</strong></div>
+<div class="stat"><small>Break-even price</small><strong id="breakeven">$0</strong></div>
+<div class="stat"><small>Net profit / labor hour</small><strong id="profitHour">$0/hr</strong></div>
+<div class="stat"><small>Travel cost</small><strong id="travelCost">$0</strong></div>
+</div>
+<div class="recommend"><small>PRICE TO HIT TARGET MARGIN</small><div class="price" id="targetPrice">$0</div><p id="advice"></p></div>
+<button class="secondary" id="clear">New job</button>
+</section>
+<div class="footer">JobWorth provides decision-support estimates from the values you enter. Taxes, insurance, financing and unentered costs are not included.</div>
+</main>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+function number(v){var s=String(v||'').trim().replace(/[,$%\s]/g,'').replace(/[^0-9.\-]/g,'');var x=parseFloat(s);return Number.isFinite(x)?x:0}
+function n(id){return number($(id).value)}
+function money(v){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(Number.isFinite(v)?v:0)}
+function pct(v){return (Number.isFinite(v)?v:0).toFixed(1)+'%'}
+function save(){['targetMargin','minMargin','defaultHourly','mileRate'].forEach(id=>localStorage.setItem('jw_'+id,$(id).value))}
+function load(){['targetMargin','minMargin','defaultHourly','mileRate'].forEach(id=>{var v=localStorage.getItem('jw_'+id);if(v!==null)$(id).value=v});$('hourly').value=$('defaultHourly').value||'40'}load();
+$('settingsBtn').onclick=()=>$('settings').classList.toggle('show');
+['targetMargin','minMargin','defaultHourly','mileRate'].forEach(id=>$(id).addEventListener('change',function(){save();if(id==='defaultHourly')$('hourly').value=this.value}));
+function alertMsg(m){$('alert').textContent=m;$('alert').style.display='block'}function hideAlert(){$('alert').style.display='none'}
+function calculate(){
+hideAlert();
+var revenue=n('revenue'),materials=Math.max(0,n('materials')),hours=Math.max(0,n('hours')),hourly=Math.max(0,n('hourly')),miles=Math.max(0,n('miles')),helper=Math.max(0,n('helper')),other=Math.max(0,n('other')),mileRate=Math.max(0,n('mileRate')),target=n('targetMargin'),minimum=n('minMargin');
+if(revenue<=0){alertMsg('Enter a job payout or proposed bid greater than $0.');return}
+if(target<=0||target>=95){alertMsg('Target margin must be between 1% and 94%.');return}
+if(minimum<0||minimum>=target){alertMsg('Minimum margin must be lower than target margin.');return}
+var labor=hours*hourly,travel=miles*mileRate,cost=materials+labor+travel+helper+other,profit=revenue-cost,margin=profit/revenue*100,roi=cost>0?profit/cost*100:(profit>0?100:0),targetPrice=cost/(1-target/100);
+var verdict='PASS',cls='bad';if(profit>0&&margin>=target){verdict='TAKE IT';cls='good'}else if(profit>0&&margin>=minimum){verdict='REBID';cls='warn'}
+$('badge').textContent=verdict;$('badge').className='badge '+cls;$('profit').textContent=money(profit);$('profit').style.color=profit<0?'var(--red)':'var(--text)';$('margin').textContent=pct(margin);$('roi').textContent=pct(roi);$('cost').textContent=money(cost);$('breakeven').textContent=money(cost);$('profitHour').textContent=hours>0?money(profit/hours)+'/hr':'—';$('travelCost').textContent=money(travel);$('targetPrice').textContent=money(targetPrice);
+$('advice').textContent=verdict==='TAKE IT'?'This job clears your '+target.toFixed(0)+'% target margin. Current price is '+money(revenue-targetPrice)+' above the target-price floor.':'Charge at least '+money(targetPrice)+' to reach your '+target.toFixed(0)+'% target margin, '+money(Math.max(0,targetPrice-revenue))+' above the current price.';
+$('result').classList.add('show');setTimeout(()=>$('result').scrollIntoView({behavior:'smooth',block:'start'}),50)
+}
+$('calc').onclick=calculate;
+$('demo').onclick=function(){var d={revenue:650,materials:130,hours:5,hourly:40,miles:82,helper:75,other:35};Object.keys(d).forEach(k=>$(k).value=d[k]);calculate()};
+$('clear').onclick=function(){['revenue','materials','hours','miles','helper','other'].forEach(id=>$(id).value='');$('hourly').value=$('defaultHourly').value||40;$('result').classList.remove('show');window.scrollTo({top:0,behavior:'smooth'})};
+})();
+</script>
+</body></html>
