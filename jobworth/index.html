@@ -42,7 +42,7 @@ button{font:inherit;cursor:pointer}.primary{width:100%;height:60px;border:0;bord
 .recent{display:none}.recent.show{display:block}.recentItem{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-top:1px solid #232b33}.recentItem:first-of-type{border-top:0}.recentMeta{min-width:0}.recentMeta strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.recentMeta small{color:var(--muted)}.recentButtons{display:flex;gap:7px}.tinyBtn{border:1px solid #303a44;background:#0d1216;color:#c5cdd4;border-radius:11px;padding:8px 10px;font-size:12px;font-weight:800}
 .footer{text-align:center;color:#64717c;font-size:10px;line-height:1.5;padding:8px 15px}.hint{font-size:11px;color:#697681;line-height:1.45;margin-top:8px}
 @media(max-width:390px){main{padding-left:13px;padding-right:13px}h1{font-size:33px}.profit{font-size:43px}.whatif{grid-template-columns:1fr 1fr}.triple{grid-template-columns:1fr}}
-</style>
+details.fold{margin-top:12px;border:1px solid #29333c;border-radius:16px;background:#0d1216;padding:12px}details.fold>summary{cursor:pointer;font-size:13px;font-weight:850;color:#dce5eb;list-style-position:inside}details.fold[open]>summary{margin-bottom:12px}details.fold .toolBox{margin-top:10px}button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #8cf0ac;outline-offset:3px}.sectionNote{font-size:11px;color:#8996a2;line-height:1.45;margin:8px 0 0}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}</style>
 </head>
 <body>
 <main>
@@ -75,7 +75,7 @@ button{font:inherit;cursor:pointer}.primary{width:100%;height:60px;border:0;bord
 <div><label>Other costs / fees</label><div class="wrap"><span class="prefix">$</span><input id="other" class="money" inputmode="decimal" placeholder="35"></div></div>
 </div>
 
-<div class="toolBox">
+<details class="fold" id="extraCosts"><summary>Optional costs (dump, fuel, permits +)</summary><div class="toolBox">
 <h3>Forgotten costs</h3><p>Add only what applies. These roll directly into job cost.</p>
 <div class="forgotten">
 <div class="costToggle"><span>Dump / disposal</span><input id="fcDump" inputmode="decimal" placeholder="$"></div>
@@ -85,7 +85,7 @@ button{font:inherit;cursor:pointer}.primary{width:100%;height:60px;border:0;bord
 <div class="costToggle"><span>Consumables</span><input id="fcConsumables" inputmode="decimal" placeholder="$"></div>
 <div class="costToggle"><span>Tolls / parking</span><input id="fcTolls" inputmode="decimal" placeholder="$"></div>
 </div>
-</div>
+</div></details>
 
 <div class="alert" id="alert"></div>
 <button class="primary" id="calc">Calculate JobWorth</button>
@@ -95,7 +95,7 @@ button{font:inherit;cursor:pointer}.primary{width:100%;height:60px;border:0;bord
 <section class="card result" id="result">
 <div class="row"><div class="title" style="margin:0">Job verdict</div><div class="badge good" id="badge">TAKE IT</div></div>
 <div class="profit" id="profit">$0</div><div class="caption">estimated net profit after entered costs and overhead</div>
-<div class="stats">
+<details class="fold" id="detailsStats"><summary>View full cost breakdown</summary><div class="stats">
 <div class="stat"><small>Profit margin</small><strong id="margin">0%</strong></div>
 <div class="stat"><small>ROI on cost</small><strong id="roi">0%</strong></div>
 <div class="stat"><small>Total job cost</small><strong id="cost">$0</strong></div>
@@ -106,21 +106,21 @@ button{font:inherit;cursor:pointer}.primary{width:100%;height:60px;border:0;bord
 <div class="stat"><small>Labor cost</small><strong id="laborCost">$0</strong></div>
 </div>
 
-<div class="recommend"><small>PRICE TO HIT TARGET MARGIN</small><div class="price" id="targetPrice">$0</div><p id="advice"></p></div>
+</details><div class="recommend"><small>PRICE TO HIT TARGET MARGIN</small><div class="price" id="targetPrice">$0</div><p id="advice"></p></div>
 
-<button class="bigAction" id="fixJob">Fix This Job</button>
+<button class="bigAction" id="fixJob">Fix This Job</button><p class="sectionNote">See the price or cost change needed to meet your goals.</p>
 <div class="toolCard" id="fixCard"><div class="toolBox"><h3>Best corrections</h3><p id="fixPrice"></p><p id="fixCost"></p><p id="fixHours"></p><p id="roundedBid"></p></div></div>
 
-<button class="bigAction" id="whatIfBtn">What If?</button>
+<button class="secondary" id="whatIfBtn">What If? Try a different price</button>
 <div class="toolCard" id="whatIfCard"><div class="toolBox"><h3>Test a higher price</h3><div class="whatif"><button data-add="50">+$50</button><button data-add="100">+$100</button><button data-add="250">+$250</button><button data-percent="10">+10%</button></div><p id="whatIfResult">Choose an adjustment.</p></div></div>
 
-<div class="toolBox leak"><h3>Profit leak</h3><p id="profitLeak">Calculate a job to see the biggest cost driver.</p></div>
+<details class="fold"><summary>Why this job pays what it does</summary><div class="toolBox leak"><h3>Profit leak</h3><p id="profitLeak">Calculate a job to see the biggest cost driver.</p></div></details>
 
-<div class="toolBox">
+<details class="fold"><summary>Compare two bid prices</summary><div class="toolBox">
 <h3>Compare two prices</h3>
 <div class="grid"><div><label>Price A</label><div class="wrap"><span class="prefix">$</span><input id="compareA" class="money" inputmode="decimal"></div></div><div><label>Price B</label><div class="wrap"><span class="prefix">$</span><input id="compareB" class="money" inputmode="decimal"></div></div></div>
 <div class="compare" style="margin-top:10px"><div class="compareCol"><small>A</small><strong id="compareAOut">—</strong><small id="compareAMeta"></small></div><div class="compareCol"><small>B</small><strong id="compareBOut">—</strong><small id="compareBMeta"></small></div></div>
-</div>
+</div></details>
 
 <div class="actionGrid triple"><button class="mini green" id="roundBid">Round My Bid</button><button class="mini" id="saveJob">Save job</button><button class="mini" id="shareResult">Share result</button></div>
 <button class="secondary" id="clear">New job</button>
@@ -186,7 +186,7 @@ $('compareA').addEventListener('input',updateCompare);$('compareB').addEventList
 function jobs(){try{var j=JSON.parse(localStorage.getItem('jw_jobs')||'[]');return Array.isArray(j)?j:[]}catch(e){return []}}
 function setJobs(list){try{localStorage.setItem('jw_jobs',JSON.stringify(list.slice(0,10)))}catch(e){alertMsg('Local storage is unavailable. Jobs cannot be saved in this browser mode.')}renderJobs()}
 function renderJobs(){var list=jobs(),box=$('recentList');box.innerHTML='';$('recentCard').classList.toggle('show',list.length>0);list.forEach(j=>{var row=document.createElement('div');row.className='recentItem';var meta=document.createElement('div');meta.className='recentMeta';meta.innerHTML='<strong>'+(j.name||'Untitled job').replace(/[<>&]/g,'')+'</strong><small>'+money(j.revenue)+' • '+j.verdict+' • '+money(j.profit)+' profit</small>';var buttons=document.createElement('div');buttons.className='recentButtons';var open=document.createElement('button');open.className='tinyBtn';open.textContent='Open';open.onclick=()=>{applyInputs(j.inputs);calculate(true)};var dup=document.createElement('button');dup.className='tinyBtn';dup.textContent='Copy';dup.onclick=()=>{applyInputs({...j.inputs,name:(j.inputs.name||'Job')+' copy'});calculate(true)};buttons.append(open,dup);row.append(meta,buttons);box.appendChild(row)})}
-$('saveJob').onclick=function(){if(!last&&!calculate(false))return;var list=jobs();list.unshift(last);setJobs(list);this.textContent='Saved';setTimeout(()=>this.textContent='Save job',1000)}
+$('saveJob').onclick=function(){if(!last&&!calculate(false))return;var list=jobs();list.unshift({...last,inputs:{...last.inputs}});setJobs(list);this.textContent='Saved';setTimeout(()=>this.textContent='Save job',1000)}
 $('clearHistory').onclick=()=>setJobs([]);
 $('shareResult').onclick=async function(){if(!last&&!calculate(false))return;var text='JobWorth'+(last.name?' — '+last.name:'')+'\n'+last.verdict+'\nRevenue: '+money(last.revenue)+'\nCost: '+money(last.cost)+'\nProfit: '+money(last.profit)+'\nMargin: '+pct(last.margin)+'\nROI: '+pct(last.roi)+'\nTarget price: '+money(last.targetPrice);try{if(navigator.share)await navigator.share({title:'JobWorth Result',text});else{await navigator.clipboard.writeText(text);this.textContent='Copied';setTimeout(()=>this.textContent='Share result',1000)}}catch(e){}}
 renderJobs();
