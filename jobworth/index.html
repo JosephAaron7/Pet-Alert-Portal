@@ -192,6 +192,9 @@ function renderJobs(){var list=jobs(),box=$('recentList');box.innerHTML='';$('re
 $('saveJob').onclick=function(){if(!last&&!calculate(false))return;var list=jobs();list.unshift({...last,inputs:{...last.inputs}});setJobs(list);this.textContent='Saved';setTimeout(()=>this.textContent='Save job',1000)}
 $('clearHistory').onclick=()=>setJobs([]);
 $('shareResult').onclick=async function(){if(!last&&!calculate(false))return;var text='JobWorth'+(last.name?' — '+last.name:'')+'\n'+last.verdict+'\nRevenue: '+money(last.revenue)+'\nCost: '+money(last.cost)+'\nProfit: '+money(last.profit)+'\nMargin: '+pct(last.margin)+'\nROI: '+pct(last.roi)+'\nTarget price: '+money(last.targetPrice);try{if(navigator.share)await navigator.share({title:'JobWorth Result',text});else{await navigator.clipboard.writeText(text);this.textContent='Copied';setTimeout(()=>this.textContent='Share result',1000)}}catch(e){}}
+
+function runSelfTests(){var checks=[];function test(name,ok){checks.push({name,pass:!!ok})}var approx=(a,b)=>Math.abs(a-b)<0.00001;test('blank optional cost',n('fcDump')===0||$('fcDump').value.trim()!=='');test('number parser',approx(number('$1,250.50'),1250.5));test('negative input',number('-5')===-5);test('invalid input',Number.isNaN(number('abc')));test('round up',roundUp(765.23,50)===800);var c=130+5*40+82*.7+75+35;test('example total cost',approx(c,497.4));test('example profit',approx(650-c,152.6));test('example target bid',approx(c/.65,765.2307692307692));test('verdict',verdictFor(650,c,5,0,35,20)==='REBID');return checks}
+window.JobWorthDiagnostics={runSelfTests:runSelfTests,version:'RC1-20261008'};
 renderJobs();
 if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.filter(r=>r.scope.indexOf('/jobworth/')!==-1).map(r=>r.unregister()))).catch(()=>{});}
 })();
