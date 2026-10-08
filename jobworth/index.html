@@ -132,15 +132,15 @@ button{font:inherit;cursor:pointer}.primary{width:100%;height:60px;border:0;bord
 </main>
 <script>
 (function(){
-const $=id=>document.getElementById(id);let live=false,last=null;
-function number(v){var s=String(v||'').trim().replace(/[,$%\s]/g,'').replace(/[^0-9.\-]/g,'');var x=parseFloat(s);return Number.isFinite(x)?x:0}
+const $=id=>document.getElementById(id);let live=false,last=null;window.addEventListener('error',function(e){var a=$('alert');if(a){a.textContent='JobWorth encountered an error. Reload this page in Safari. Details: '+String(e.message||'unknown');a.style.display='block'}});
+function number(v){var s=String(v||'').trim().replace(/[,$%\s]/g,'').replace(/[^0-9.\-]/g,'');var x=Number(s);return s!==''&&Number.isFinite(x)?x:0}
 function n(id){return number($(id).value)}
 function money(v){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(Number.isFinite(v)?v:0)}
 function pct(v){return (Number.isFinite(v)?v:0).toFixed(1)+'%'}
 function roundUp(v,inc){return Math.ceil((v-1e-9)/inc)*inc}
 const defaults=['targetMargin','minMargin','defaultHourly','mileRate','overheadPct','minProfitHour'];
-function saveDefaults(){defaults.forEach(id=>localStorage.setItem('jw_'+id,$(id).value))}
-function loadDefaults(){defaults.forEach(id=>{var v=localStorage.getItem('jw_'+id);if(v!==null)$(id).value=v});$('hourly').value=$('defaultHourly').value||'40';syncPills()}loadDefaults();
+function saveDefaults(){try{defaults.forEach(id=>localStorage.setItem('jw_'+id,$(id).value))}catch(e){}}
+function loadDefaults(){try{defaults.forEach(id=>{var v=localStorage.getItem('jw_'+id);if(v!==null)$(id).value=v})}catch(e){}$('hourly').value=$('defaultHourly').value||'40';syncPills()}loadDefaults();
 function syncPills(){document.querySelectorAll('[data-margin]').forEach(b=>b.classList.toggle('active',number(b.dataset.margin)===number($('targetMargin').value)));document.querySelectorAll('[data-overhead]').forEach(b=>b.classList.toggle('active',number(b.dataset.overhead)===number($('overheadPct').value)))}
 $('settingsBtn').onclick=()=>$('settings').classList.toggle('show');
 document.querySelectorAll('[data-margin]').forEach(b=>b.onclick=function(){$('targetMargin').value=this.dataset.margin;saveDefaults();syncPills();if(live)calculate(false)});
@@ -150,7 +150,7 @@ function alertMsg(m){$('alert').textContent=m;$('alert').style.display='block'}f
 function forgottenTotal(){return ['fcDump','fcFuel','fcPermit','fcRental','fcConsumables','fcTolls'].reduce((a,id)=>a+Math.max(0,n(id)),0)}
 function currentInputs(){var o={name:$('jobName').value.trim()};['revenue','materials','hours','hourly','miles','helper','other','fcDump','fcFuel','fcPermit','fcRental','fcConsumables','fcTolls'].forEach(id=>o[id]=$(id).value);return o}
 function applyInputs(j){$('jobName').value=j.name||'';['revenue','materials','hours','hourly','miles','helper','other','fcDump','fcFuel','fcPermit','fcRental','fcConsumables','fcTolls'].forEach(id=>$(id).value=j[id]??'')}
-function verdictFor(price,cost,hours,minPH,target,minimum){var profit=price-cost,margin=price>0?profit/price*100:0,pph=hours>0?profit/hours:profit;var hourlyOk=minPH<=0||pph>=minPH;if(profit>0&&margin>=target&&hourlyOk)return 'TAKE IT';if(profit>0&&margin>=minimum)return 'REBID';return 'PASS'}
+function verdictFor(price,cost,hours,minPH,target,minimum){var profit=price-cost,margin=price>0?profit/price*100:0,pph=hours>0?profit/hours:profit;var hourlyOk=minPH<=0||(hours>0&&pph>=minPH);if(profit>0&&margin>=target&&hourlyOk)return 'TAKE IT';if(profit>0&&margin>=minimum)return 'REBID';return 'PASS'}
 function calcAt(price,cost,hours){var profit=price-cost,margin=price?profit/price*100:0,roi=cost>0?profit/cost*100:0;return {profit,margin,roi,pph:hours>0?profit/hours:0}}
 function calculate(scroll){
 hideAlert();
@@ -158,14 +158,14 @@ var revenue=n('revenue'),materials=Math.max(0,n('materials')),hours=Math.max(0,n
 if(revenue<=0){if(scroll!==false)alertMsg('Enter a job payout or proposed bid greater than $0.');$('result').classList.remove('show');live=false;last=null;return false}
 if(target<=0||target>=95){alertMsg('Target margin must be between 1% and 94%.');return false}
 if(minimum<0||minimum>=target){alertMsg('Minimum margin must be lower than target margin.');return false}
-if(overheadPct>100||minPH>100000){alertMsg('Check your overhead and hourly profit target settings.');return false}\nvar labor=hours*hourly,travel=miles*mileRate,direct=materials+labor+travel+helper+other+forgotten,overhead=direct*(overheadPct/100),cost=direct+overhead,profit=revenue-cost,margin=profit/revenue*100,roi=cost>0?profit/cost*100:(profit>0?100:0),targetPrice=cost/(1-target/100),allowedCost=revenue*(1-target/100),costRoom=allowedCost-cost,pph=hours>0?profit/hours:0;
+if((minPH>0&&hours<=0)){alertMsg('Enter labor hours to use the minimum hourly profit goal.');return false}if(overheadPct>100||minPH>100000){alertMsg('Check your overhead and hourly profit target settings.');return false}\nvar labor=hours*hourly,travel=miles*mileRate,direct=materials+labor+travel+helper+other+forgotten,overhead=direct*(overheadPct/100),cost=direct+overhead,profit=revenue-cost,margin=profit/revenue*100,roi=cost>0?profit/cost*100:(profit>0?100:0),targetPrice=cost/(1-target/100),allowedCost=revenue*(1-target/100),costRoom=allowedCost-cost,pph=hours>0?profit/hours:0;
 var hourlyPrice=hours>0?cost+minPH*hours:0;var decisionPrice=Math.max(targetPrice,hourlyPrice);var verdict=verdictFor(revenue,cost,hours,minPH,target,minimum),cls=verdict==='TAKE IT'?'good':verdict==='REBID'?'warn':'bad';
 $('badge').textContent=verdict;$('badge').className='badge '+cls;$('profit').textContent=money(profit);$('profit').style.color=profit<0?'var(--red)':'var(--text)';$('margin').textContent=pct(margin);$('roi').textContent=pct(roi);$('cost').textContent=money(cost);$('breakeven').textContent=money(cost);$('profitHour').textContent=hours>0?money(pph)+'/hr':'—';$('overheadCost').textContent=money(overhead);$('laborCost').textContent=money(labor);$('costRoom').textContent=(costRoom>=0?'+':'')+money(costRoom);$('costRoom').style.color=costRoom>=0?'var(--green)':'var(--red)';$('targetPrice').textContent=money(decisionPrice);
 var hourlyNote=(minPH>0&&hours>0&&pph<minPH)?' It also misses your '+money(minPH)+'/hr minimum profit target.':'';
 $('advice').textContent=verdict==='TAKE IT'?'This job clears your '+target.toFixed(0)+'% target margin and your minimum hourly goal. Current price is '+money(revenue-targetPrice)+' above the target-price floor.':'Charge at least '+money(decisionPrice)+' to satisfy your pricing targets.'+hourlyNote;
 var costs={Labor:labor,Materials:materials,Travel:travel,'Helper / subcontractor':helper,'Other + forgotten':other+forgotten,Overhead:overhead};var leak=Object.entries(costs).sort((a,b)=>b[1]-a[1])[0];var leakPct=cost>0?leak[1]/cost*100:0;$('profitLeak').innerHTML='<strong>'+leak[0]+'</strong> is your biggest cost driver at '+money(leak[1])+' ('+leakPct.toFixed(0)+'% of total cost).';
-$('compareA').value=revenue;$('compareB').value=roundUp(targetPrice,50);updateCompare();
-$('result').classList.add('show');live=true;last={verdict,revenue,cost,profit,margin,roi,targetPrice:decisionPrice,name:$('jobName').value.trim(),inputs:currentInputs(),savedAt:Date.now(),hours,minPH,target,minimum,hourly,costRoom};if(scroll!==false)setTimeout(()=>$('result').scrollIntoView({behavior:'smooth',block:'start'}),50);return true
+$('compareA').value=revenue;$('compareB').value=roundUp(decisionPrice,50);
+$('result').classList.add('show');live=true;last={verdict,revenue,cost,profit,margin,roi,targetPrice:decisionPrice,name:$('jobName').value.trim(),inputs:currentInputs(),savedAt:Date.now(),hours,minPH,target,minimum,hourly,costRoom};updateCompare();if(scroll!==false)setTimeout(()=>$('result').scrollIntoView({behavior:'smooth',block:'start'}),50);return true
 }
 $('calc').onclick=()=>calculate(true);
 ['revenue','materials','hours','hourly','miles','helper','other','fcDump','fcFuel','fcPermit','fcRental','fcConsumables','fcTolls'].forEach(id=>$(id).addEventListener('input',()=>{if(live)calculate(false)}));
@@ -182,14 +182,14 @@ $('roundBid').onclick=function(){if(!last&&!calculate(false))return;var rounded=
 function updateCompare(){if(!last)return;[['A','compareA'],['B','compareB']].forEach(([key,id])=>{var price=n(id),x=calcAt(price,last.cost,last.hours),v=verdictFor(price,last.cost,last.hours,last.minPH,last.target,last.minimum);$('compare'+key+'Out').textContent=money(x.profit)+' profit';$('compare'+key+'Meta').textContent=pct(x.margin)+' margin • '+v})}
 $('compareA').addEventListener('input',updateCompare);$('compareB').addEventListener('input',updateCompare);
 
-function jobs(){try{return JSON.parse(localStorage.getItem('jw_jobs')||'[]')}catch(e){return []}}
-function setJobs(list){localStorage.setItem('jw_jobs',JSON.stringify(list.slice(0,10)));renderJobs()}
+function jobs(){try{var j=JSON.parse(localStorage.getItem('jw_jobs')||'[]');return Array.isArray(j)?j:[]}catch(e){return []}}
+function setJobs(list){try{localStorage.setItem('jw_jobs',JSON.stringify(list.slice(0,10)))}catch(e){alertMsg('Local storage is unavailable. Jobs cannot be saved in this browser mode.')}renderJobs()}
 function renderJobs(){var list=jobs(),box=$('recentList');box.innerHTML='';$('recentCard').classList.toggle('show',list.length>0);list.forEach(j=>{var row=document.createElement('div');row.className='recentItem';var meta=document.createElement('div');meta.className='recentMeta';meta.innerHTML='<strong>'+(j.name||'Untitled job').replace(/[<>&]/g,'')+'</strong><small>'+money(j.revenue)+' • '+j.verdict+' • '+money(j.profit)+' profit</small>';var buttons=document.createElement('div');buttons.className='recentButtons';var open=document.createElement('button');open.className='tinyBtn';open.textContent='Open';open.onclick=()=>{applyInputs(j.inputs);calculate(true)};var dup=document.createElement('button');dup.className='tinyBtn';dup.textContent='Copy';dup.onclick=()=>{applyInputs({...j.inputs,name:(j.inputs.name||'Job')+' copy'});calculate(true)};buttons.append(open,dup);row.append(meta,buttons);box.appendChild(row)})}
 $('saveJob').onclick=function(){if(!last&&!calculate(false))return;var list=jobs();list.unshift(last);setJobs(list);this.textContent='Saved';setTimeout(()=>this.textContent='Save job',1000)}
 $('clearHistory').onclick=()=>setJobs([]);
 $('shareResult').onclick=async function(){if(!last&&!calculate(false))return;var text='JobWorth'+(last.name?' — '+last.name:'')+'\n'+last.verdict+'\nRevenue: '+money(last.revenue)+'\nCost: '+money(last.cost)+'\nProfit: '+money(last.profit)+'\nMargin: '+pct(last.margin)+'\nROI: '+pct(last.roi)+'\nTarget price: '+money(last.targetPrice);try{if(navigator.share)await navigator.share({title:'JobWorth Result',text});else{await navigator.clipboard.writeText(text);this.textContent='Copied';setTimeout(()=>this.textContent='Share result',1000)}}catch(e){}}
 renderJobs();
-if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').then(r=>r.update()).catch(()=>{});
+if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.filter(r=>r.scope.indexOf('/jobworth/')!==-1).map(r=>r.unregister()))).catch(()=>{});}
 })();
 </script>
 </body></html>
